@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Numbers & Strings — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "numbers-strings",
+  summary: "Python numbers and strings behave differently enough from Java's to trip up experienced developers: integers have arbitrary precision with no overflow, strings are immutable sequences with rich built-in slicing, and f-strings replace String.format and manual concatenation entirely.",
+  keyDifferences: [
+    "Java: int overflows silently at 2^31-1 (or use long / BigInteger). Python: int has arbitrary precision automatically — no overflow, ever.",
+    "Java: String is immutable; concatenating with + in a loop is a classic anti-pattern, fixed with StringBuilder. Python: str is also immutable, but f-strings and .join() are the idiomatic tools, not a builder class.",
+    "Java: <code>String.format(\"%s is %d\", name, age)</code> or manual + concatenation. Python: f-strings — <code>f\"{name} is {age}\"</code>.",
+    "Java: <code>substring(start, end)</code> via a method call. Python: slicing syntax <code>s[start:end]</code> is built into the language and works on any sequence (str, list, tuple).",
+    "Java: char is a distinct primitive type. Python: there is no char type — a single character is just a string of length 1.",
+  ],
+  template: {
+    note: "f-strings for interpolation, slicing for substrings — the two tools you'll reach for constantly.",
+    code: `name = "Ada"
+age = 36
+print(f"{name} is {age} years old")     # f-string: variables interpolated directly
+print(f"{age * 2 = }")                    # debug shortcut: prints "age * 2 = 72"
+
+s = "hello world"
+print(s[0:5])       # "hello" -- slice [start:end), end excluded
+print(s[-5:])        # "world" -- negative indices count from the end
+print(s[::-1])        # "dlrow olleh" -- reversed, step -1`,
+  },
+  examples: [
+    {
+      title: "Arbitrary precision integers",
+      prompt: "Show that Python ints never overflow, contrasted with Java's fixed-width int/long.",
+      code: `big = 2 ** 100
+print(big)
+print(type(big))    # still just <class 'int'> -- no separate BigInteger type needed`,
+      explanation: "Java's int maxes out at 2^31 - 1 and long at 2^63 - 1; beyond that you need java.math.BigInteger explicitly. Python's int automatically grows to hold arbitrarily large values with no special type or import — the tradeoff is a small per-operation performance cost compared to a fixed-width machine int.",
+      output: "1267650600228229401496703205376\n<class 'int'>",
+    },
+    {
+      title: "String building the idiomatic way",
+      prompt: "Show why += concatenation in a loop is discouraged, and the join() alternative.",
+      code: `words = ["Forward", "Deployed", "Engineer"]
+
+# works, but rebuilds a new string object every iteration -- O(n^2) for n words
+result = ""
+for w in words:
+    result += w + " "
+
+# idiomatic: join is a single pass, O(n)
+result = " ".join(words)
+print(result)`,
+      explanation: "Because str is immutable, every += creates a brand new string object and copies the old contents into it — exactly the same trap as Java string concatenation in a loop, which is why Java has StringBuilder. Python's idiomatic fix isn't a builder class, it's <code>.join()</code>, which computes the total length once and allocates a single result string.",
+      output: '"Forward Deployed Engineer"',
+    },
+  ],
+  gotchas: [
+    "Treating a single character as a distinct type — <code>s[0]</code> returns a string of length 1, not a char.",
+    "Using <code>+=</code> to build strings in a loop out of habit — reach for <code>.join()</code> instead.",
+    "Forgetting slices are <code>[start:end)</code> — the end index is exclusive, the same off-by-one risk as Java's substring.",
+  ],
+  practiceExercises: [
+    "Compute 2**64 in a REPL and confirm Python doesn't overflow or need a BigInteger import",
+    "Reverse a string using slicing, without writing a loop",
+    "Build a comma-separated string from a list using .join() instead of +=",
+  ],
+  quiz: [
+    {
+      question: "What happens when a Python int exceeds Java's long range (2^63-1)?",
+      options: [
+        "Nothing special — Python ints have arbitrary precision and grow automatically",
+        "It silently overflows like Java's long",
+        "It raises an OverflowError",
+        "It's automatically converted to a float, losing precision",
+      ],
+      correct: 0,
+      explanation: "Python integers are unbounded by design; there's no fixed-width overflow behavior to worry about.",
+    },
+    {
+      question: "What does s[2:5] return for a string s?",
+      options: [
+        "Characters at indices 2, 3, 4 (the end index is excluded)",
+        "Characters at indices 2, 3, 4, 5",
+        "The 2nd through 5th characters, counting from 1",
+        "It raises an error",
+      ],
+      correct: 0,
+      explanation: "Python slices are half-open ranges: [start, end), matching Java's substring(start, end) convention.",
+    },
+    {
+      question: "Why is `result += word` in a loop discouraged for building strings?",
+      options: [
+        "Strings are immutable, so each += allocates and copies a brand new string, making the loop O(n^2)",
+        "It's a syntax error in Python",
+        "It only works for numbers, not strings",
+        "It's actually the fastest approach available",
+      ],
+      correct: 0,
+      explanation: "Each concatenation copies the entire string built so far, so total work grows quadratically with the number of pieces.",
+    },
+    {
+      question: "What's the idiomatic Python replacement for Java's StringBuilder pattern?",
+      options: [
+        "\"separator\".join(iterable) to combine many pieces in a single pass",
+        "Manual += concatenation in a loop",
+        "Importing StringBuilder from java.util",
+        "There is no equivalent in Python",
+      ],
+      correct: 0,
+      explanation: ".join() computes the final length once and builds the result in one allocation, avoiding repeated copying.",
+    },
+    {
+      question: "Does Python have a distinct char type like Java?",
+      options: [
+        "No — a single character is just a string of length 1",
+        "Yes, identical to Java's char",
+        "Yes, but only for ASCII characters",
+        "Only inside f-strings",
+      ],
+      correct: 0,
+      explanation: "Python has exactly one string type, str, regardless of length — there's no separate single-character type.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>

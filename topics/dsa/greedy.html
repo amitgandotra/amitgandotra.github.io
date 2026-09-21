@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Greedy — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "greedy",
+  summary: "Make the locally optimal choice at each step and never look back, trusting that local optimality composes into a global optimum. Only valid when the problem has the greedy-choice property and optimal substructure — otherwise it silently gives a wrong answer, unlike DP, which always considers every option.",
+  recognize: [
+    "'Maximum/minimum number of X' with a simple, provable local rule",
+    "Interval scheduling (earliest finish time first)",
+    "Sorting by some criterion, then a single linear scan, gives the answer",
+    "Warning sign: if you can't prove the local choice is always safe, it's probably not actually a greedy problem",
+  ],
+  template: {
+    note: "Jump Game: can you reach the last index, greedily tracking the farthest reachable index.",
+    code: `def can_jump(nums):
+    max_reach = 0
+    for i, n in enumerate(nums):
+        if i > max_reach:
+            return False
+        max_reach = max(max_reach, i + n)
+    return True`,
+  },
+  examples: [
+    {
+      title: "Gas Station",
+      prompt: "Given gas[i] and cost[i] around a circular route, return the starting station index from which you can complete the whole circuit, or -1 if impossible. Guaranteed unique if it exists.",
+      code: `def can_complete_circuit(gas, cost):
+    if sum(gas) < sum(cost):
+        return -1
+
+    total = 0
+    start = 0
+    for i in range(len(gas)):
+        total += gas[i] - cost[i]
+        if total < 0:
+            start = i + 1
+            total = 0
+    return start`,
+      explanation: "If total gas is at least total cost overall, a valid start is guaranteed to exist. Greedily: whenever the running tank goes negative starting from the current candidate, none of the stations between the old start and i could have been valid starts either — so jump the candidate straight to i+1 and reset.",
+      complexity: "Time: O(n) · Space: O(1)",
+      complexityWhy: "The array is scanned exactly once, accumulating the running total and candidate start in the same pass, so total work is O(n). Only a few running variables are tracked, none of which grow with n, giving O(1) space.",
+    },
+    {
+      title: "Jump Game II",
+      prompt: "Given an array where nums[i] is the max jump length from index i, return the minimum number of jumps to reach the last index.",
+      code: `def jump(nums):
+    jumps = 0
+    curr_end = 0
+    farthest = 0
+    for i in range(len(nums) - 1):
+        farthest = max(farthest, i + nums[i])
+        if i == curr_end:
+            jumps += 1
+            curr_end = farthest
+    return jumps`,
+      explanation: "This is a greedy BFS-by-levels in disguise. curr_end marks the boundary of the current jump's reach; when i reaches that boundary, another jump is forced, and the next boundary becomes the farthest index reachable from anywhere within the current range.",
+      complexity: "Time: O(n) · Space: O(1)",
+      complexityWhy: "Each index from 0 to n-2 is visited exactly once to update `farthest`, giving O(n) time. Only three integer variables are tracked regardless of array size, giving O(1) space.",
+    },
+  ],
+  practiceProblems: [
+    "Jump Game",
+    "Jump Game II",
+    "Gas Station",
+    "Hand of Straights",
+    "Merge Triplets to Form Target Triplet",
+    "Partition Labels",
+  ],
+  quiz: [
+    {
+      question: "Greedy algorithms work correctly only when the problem has...",
+      options: [
+        "The greedy-choice property and optimal substructure",
+        "Any arbitrary structure",
+        "Negative weights",
+        "A 2-D DP table",
+      ],
+      correct: 0,
+      explanation: "Without both properties, choosing the locally best option at each step doesn't guarantee a globally optimal result.",
+    },
+    {
+      question: "What's the risk of applying a greedy approach without proving it's correct?",
+      options: [
+        "It can silently produce a wrong answer that looks plausible, unlike DP which explores all options",
+        "It will always throw a runtime error",
+        "It always produces the same result as DP",
+        "There is no risk — greedy always works",
+      ],
+      correct: 0,
+      explanation: "An unproven greedy strategy can pass simple test cases while being wrong in general, which is what makes greedy risky compared to exhaustive DP.",
+    },
+    {
+      question: "In Gas Station, why does the running total going negative at index i let you jump the candidate start straight to i+1?",
+      options: [
+        "None of the stations between the old start and i could have completed the circuit either, given the prefix sums involved",
+        "It's arbitrary and doesn't affect correctness",
+        "Because gas[i] is always negative at that point",
+        "It's done purely to save memory",
+      ],
+      correct: 0,
+      explanation: "If the cumulative sum from the old start dips negative at i, every station in between would hit that same deficit (or worse) as a starting point, so they can all be safely skipped.",
+    },
+    {
+      question: "In Jump Game II, what does curr_end represent during the scan?",
+      options: [
+        "The farthest index reachable using the jumps taken so far",
+        "The final index of the array",
+        "The current loop index i",
+        "The total number of jumps made",
+      ],
+      correct: 0,
+      explanation: "It's the boundary of the current 'jump level' — crossing it forces the count of jumps to increment.",
+    },
+    {
+      question: "Compared to DP, what's the main advantage of a correct greedy solution?",
+      options: [
+        "Typically much lower time complexity (often O(n) or O(n log n)), since it never explores alternate branches",
+        "It always uses more memory than DP",
+        "It's harder to prove correct but runs slower",
+        "There is no real advantage",
+      ],
+      correct: 0,
+      explanation: "Greedy makes one pass with one irrevocable choice per step, avoiding the exploration of multiple branches that DP requires.",
+    },
+  ],
+};
+</script>
+<script src="../../js/pattern-page.js"></script>
+</body>
+</html>

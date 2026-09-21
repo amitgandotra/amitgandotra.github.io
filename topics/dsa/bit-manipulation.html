@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bit Manipulation — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "bit-manipulation",
+  summary: "Operate directly on the binary representation of integers for O(1) tricks that would otherwise need loops or extra memory — XOR for finding unique elements, shifts for power-of-two logic, AND/OR for masks and flags.",
+  recognize: [
+    "'Without using extra memory' combined with numeric input &rarr; often a bit trick",
+    "Finding a single/unique element among duplicates &rarr; XOR",
+    "Checking or counting set bits, or detecting powers of two",
+    "Subset generation via bitmask, where each bit represents include/exclude",
+  ],
+  template: {
+    note: "A few bit tricks that show up constantly.",
+    code: `def bit_tricks(n):
+    is_power_of_two = n > 0 and (n & (n - 1)) == 0
+    count_set_bits = bin(n).count("1")
+    lowest_set_bit = n & (-n)
+    return is_power_of_two, count_set_bits, lowest_set_bit`,
+  },
+  examples: [
+    {
+      title: "Single Number",
+      prompt: "Given a non-empty array where every element appears exactly twice except for one, find that single element in O(n) time and O(1) space.",
+      code: `def single_number(nums):
+    result = 0
+    for n in nums:
+        result ^= n
+    return result`,
+      explanation: "XOR is commutative and associative, and a ^ a = 0 while a ^ 0 = a. XOR-ing every element together cancels every pair, leaving only the unpaired element standing.",
+      complexity: "Time: O(n) · Space: O(1)",
+      complexityWhy: "Each of the n elements is XOR-ed into the accumulator exactly once, giving O(n) time. A single integer accumulator is used regardless of array size, giving O(1) space.",
+    },
+    {
+      title: "Counting Bits",
+      prompt: "Given an integer n, return an array ans of length n+1 where ans[i] is the number of 1's in the binary representation of i.",
+      code: `def count_bits(n):
+    ans = [0] * (n + 1)
+    for i in range(1, n + 1):
+        ans[i] = ans[i >> 1] + (i & 1)
+    return ans`,
+      explanation: "Dropping the lowest bit (i >> 1) gives a smaller number whose bit count is already computed earlier in the same pass; adding back whether that dropped bit was 1 (i & 1) completes the count. It's DP layered on top of a bit trick.",
+      complexity: "Time: O(n) · Space: O(n)",
+      complexityWhy: "Each ans[i] for i from 1 to n is computed with O(1) work (one shift, one AND, one array lookup, one addition), giving O(n) total. The output array itself holds n+1 entries, giving O(n) space.",
+    },
+  ],
+  practiceProblems: [
+    "Single Number",
+    "Number of 1 Bits",
+    "Counting Bits",
+    "Reverse Bits",
+    "Missing Number",
+    "Sum of Two Integers",
+  ],
+  quiz: [
+    {
+      question: "XOR-ing a number with itself gives...",
+      options: ["0", "The number itself", "1", "-1"],
+      correct: 0,
+      explanation: "a ^ a = 0 for any a — this self-cancelling property is the basis of the Single Number trick.",
+    },
+    {
+      question: "The expression n & (n - 1) is used to...",
+      options: [
+        "Clear the lowest set bit, useful for counting set bits or checking powers of two",
+        "Set all bits to 1",
+        "Reverse the bits of n",
+        "Always return 0",
+      ],
+      correct: 0,
+      explanation: "Subtracting 1 flips the lowest set bit and everything below it; ANDing with the original clears exactly that lowest set bit.",
+    },
+    {
+      question: "In Single Number, why does XOR-ing every element together isolate the unpaired one?",
+      options: [
+        "XOR is commutative/associative and self-cancelling (a^a=0), so every pair cancels out, leaving only the element without a partner",
+        "XOR sorts the array first",
+        "It only works when there are exactly two elements",
+        "It requires extra memory to work correctly",
+      ],
+      correct: 0,
+      explanation: "Order doesn't matter for XOR, so all the duplicated elements cancel regardless of their position, leaving only the singleton.",
+    },
+    {
+      question: "In Counting Bits, what does ans[i >> 1] represent when computing ans[i]?",
+      options: [
+        "The bit count of i with its lowest bit removed, already computed earlier in the same pass",
+        "The bit count of i doubled",
+        "The negation of i",
+        "An unrelated random value",
+      ],
+      correct: 0,
+      explanation: "i >> 1 is i with its last bit dropped, and since it's smaller than i, its answer was already filled in during an earlier iteration.",
+    },
+    {
+      question: "What's a common reason to reach for bit manipulation in an interview problem?",
+      options: [
+        "The problem demands O(1) extra space or exploits binary structure (uniqueness, powers of two, subset masks)",
+        "It's always the fastest approach regardless of the problem",
+        "It replaces the need for any data structure ever",
+        "It's required whenever integers are involved",
+      ],
+      correct: 0,
+      explanation: "Bit tricks are a targeted tool for specific structural properties — not a universal replacement for arrays, hashmaps, or other structures.",
+    },
+  ],
+};
+</script>
+<script src="../../js/pattern-page.js"></script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Syntax & Variables — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "syntax-variables",
+  summary: "Python's syntax removes most of Java's ceremony — no type declarations, no braces, no semicolons — while quietly changing the rules underneath: everything is an object, types are dynamic but strict, and mutability lives on the object, not the variable name.",
+  keyDifferences: [
+    "Java: <code>int x = 5;</code> declares a typed variable. Python: <code>x = 5</code> — x is just a name bound to an int object; the same name can be rebound to any type later.",
+    "Java: blocks delimited by <code>{ }</code>; statements end with <code>;</code>. Python: blocks delimited by indentation (4 spaces is convention); no semicolons needed.",
+    "Java: static typing, checked at compile time. Python: dynamic typing, checked at runtime — but still <strong>strongly</strong> typed. No implicit <code>\"5\" + 5</code> coercion like JavaScript; that raises a TypeError.",
+    "Java: primitives (int, boolean) are distinct from wrapper objects (Integer, Boolean). Python: everything, including integers and booleans, is an object.",
+    "Java: a variable is a typed container. Python: a name is just a label pointing at an object; mutability is a property of the object (list is mutable, tuple/str/int are immutable), not of the variable.",
+  ],
+  template: {
+    note: "Assignment binds a name to an object — it never declares a type.",
+    code: `x = 5                 # int
+x = "now a string"     # legal -- x is rebound, not retyped
+
+a, b = 1, 2             # multiple assignment
+a, b = b, a              # swap, no temp variable needed
+
+print(type(x))            # <class 'str'>`,
+  },
+  examples: [
+    {
+      title: "Dynamic typing, but still strong typing",
+      prompt: "Show what's legal to rebind versus what Python still refuses to silently coerce.",
+      code: `count = 0
+count = "zero"      # legal in Python -- would be a compile error in Java
+
+# total = "5" + 5   # this raises TypeError: can only concatenate str (not "int") to str
+
+total = "5" + str(5)   # explicit conversion required, same discipline as Java
+print(total)`,
+      explanation: "Java catches type errors at compile time; Python catches them at runtime, so the same category of mistake surfaces as an exception during execution instead of a build failure. Crucially, 'dynamically typed' does not mean 'loosely typed' — Python still refuses to silently coerce a string and an int the way JavaScript's <code>+</code> would.",
+      output: '"55"',
+    },
+    {
+      title: "Mutability lives on the object, not the name",
+      prompt: "Show what happens when two names point at the same mutable object versus a real copy.",
+      code: `a = [1, 2, 3]
+b = a           # b now points at the SAME list object as a
+b.append(4)
+print(a)         # [1, 2, 3, 4] -- a changed too, because a and b are the same object
+
+c = a[:]          # slicing makes a real, independent copy
+c.append(5)
+print(a)           # unaffected -- c is a different object`,
+      explanation: "Assignment in Python never copies — it binds a name to an existing object. This is close to Java's reference semantics for objects (two variables can point at the same ArrayList), not Java's value semantics for primitives. To actually copy a mutable object, you do so explicitly, via slicing, <code>list()</code>, or <code>.copy()</code>.",
+      output: "[1, 2, 3, 4]",
+    },
+  ],
+  gotchas: [
+    "Assuming <code>=</code> copies, the way it effectively does for Java primitives — for Python's mutable objects, it only copies the reference.",
+    "Using <code>==</code> expecting Java reference-equality semantics: in Python, <code>==</code> always compares values (like Java's <code>.equals()</code>), never identity. Use <code>is</code> for identity comparison.",
+    "Forgetting Python has no <code>final</code>/const keyword — <code>ALL_CAPS = value</code> is a naming convention only, not enforced immutability.",
+  ],
+  practiceExercises: [
+    "Predict the output of the mutability example above before running it, then verify in a REPL",
+    "Write a two-line swap of two variables using Python's tuple unpacking",
+    "Try <code>\"5\" + 5</code> in the REPL and read the exact TypeError message",
+  ],
+  quiz: [
+    {
+      question: "In Python, `x = 5` followed later by `x = \"hello\"` is...",
+      options: [
+        "Completely legal — x is rebound to a new object of a different type",
+        "A compile error, just like Java",
+        "A runtime TypeError",
+        "Only legal inside a function",
+      ],
+      correct: 0,
+      explanation: "Names aren't typed in Python — only the objects they point to are. Rebinding to a different type is always legal.",
+    },
+    {
+      question: "Python is best described as...",
+      options: [
+        "Dynamically typed but strongly typed — no implicit coercion between unrelated types",
+        "Dynamically typed and weakly typed, like JavaScript",
+        "Statically typed, like Java",
+        "Untyped",
+      ],
+      correct: 0,
+      explanation: "Dynamic refers to when types are checked (runtime, not compile time); strong refers to whether the language silently coerces between types (it doesn't).",
+    },
+    {
+      question: "What does `b = a` do when `a` is a list?",
+      options: [
+        "b becomes a second name pointing at the exact same list object",
+        "b becomes an independent copy of the list",
+        "It raises an error",
+        "b becomes an empty list",
+      ],
+      correct: 0,
+      explanation: "Assignment binds names to objects; it never copies. Mutating through either name affects the one underlying object.",
+    },
+    {
+      question: "How do you make a real, independent copy of a list `a` in Python?",
+      options: [
+        "a[:], list(a), or a.copy()",
+        "b = a is already a copy",
+        "Copying lists isn't possible in Python",
+        "Using the + operator alone",
+      ],
+      correct: 0,
+      explanation: "All three create a new list object with the same elements, rather than a second reference to the original.",
+    },
+    {
+      question: "Python's `ALL_CAPS_NAME = value` convention for constants is...",
+      options: [
+        "A naming convention only — Python has no enforced immutability like Java's final",
+        "Enforced by the interpreter; reassignment raises an error",
+        "Only valid at module level",
+        "Automatically made thread-safe",
+      ],
+      correct: 0,
+      explanation: "Nothing in the language prevents reassigning an ALL_CAPS name — it's purely a signal to other developers.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>

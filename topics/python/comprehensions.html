@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comprehensions — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "comprehensions",
+  summary: "List/dict/set comprehensions replace the explicit for-loop-plus-append pattern with a single, more declarative expression — the Python idiom Java developers most need to consciously adopt. Java's closest analog, Streams, is more verbose and arrived over a decade later.",
+  keyDifferences: [
+    "Java: <code>List&lt;Integer&gt; squares = new ArrayList&lt;&gt;(); for (int n : nums) squares.add(n*n);</code>. Python: <code>squares = [n*n for n in nums]</code> — one line, no explicit accumulator.",
+    "Java 8+: <code>nums.stream().map(n -&gt; n*n).collect(Collectors.toList())</code> is the closest analog — more ceremony, and a pipeline mental model rather than Python's direct 'for x in y' reading.",
+    "Java: filtering requires <code>.stream().filter(...)</code>. Python: an if clause appended directly to the comprehension.",
+    "Java: a Cartesian product needs nested streams or manual loops. Python: comprehensions support multiple for clauses in one expression.",
+    "Comprehensions exist for all three main collection types — <code>[...]</code> list, <code>{...}</code> set, <code>{k: v ...}</code> dict — same syntax shape, different brackets.",
+  ],
+  template: {
+    note: "The three comprehension shapes, plus filtering and nesting.",
+    code: `nums = [1, 2, 3, 4, 5]
+
+squares = [n * n for n in nums]                    # list comprehension
+evens = [n for n in nums if n % 2 == 0]              # with a filter
+pairs = [(a, b) for a in nums for b in nums if a < b]   # nested, Cartesian-ish
+
+square_set = {n * n for n in nums}                    # set comprehension
+square_map = {n: n * n for n in nums}                   # dict comprehension`,
+  },
+  examples: [
+    {
+      title: "Comprehension vs. explicit loop",
+      prompt: "Transform a list of names to their uppercase initials, only for names longer than 2 characters.",
+      code: `names = ["Al", "Grace", "Ada", "Bo", "Alan"]
+
+# explicit loop version -- what a Java developer reaches for first
+result = []
+for name in names:
+    if len(name) > 2:
+        result.append(name[0].upper())
+
+# comprehension version -- same logic, one expression
+result = [name[0].upper() for name in names if len(name) > 2]
+print(result)`,
+      explanation: "Both versions do exactly the same work with the same O(n) time complexity — the comprehension isn't faster in any meaningful way, it's a more direct expression of 'build a new list by transforming and filtering an existing one.' Once the pattern clicks, comprehensions read closer to the problem statement than the accumulator-loop version does.",
+      output: "['A', 'A', 'B']",
+    },
+    {
+      title: "Nested comprehension: flatten and transpose",
+      prompt: "Flatten a 2D grid into a single list, and build a transposed version.",
+      code: `grid = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+
+flat = [num for row in grid for num in row]     # flatten: outer loop first, inner loop second
+print(flat)      # [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+transposed = [[row[i] for row in grid] for i in range(len(grid[0]))]
+print(transposed)    # [[1, 4, 7], [2, 5, 8], [3, 6, 9]]`,
+      explanation: "Multiple for clauses in one comprehension read left to right in the same order as the equivalent nested loops — 'for row in grid for num in row' means 'for each row, for each num in that row,' exactly like a nested for-loop, minus the append() bookkeeping. The transpose example nests a full comprehension inside another to build a 2D result.",
+      output: "[1, 2, 3, 4, 5, 6, 7, 8, 9]",
+    },
+  ],
+  gotchas: [
+    "Overusing comprehensions for anything with side effects (printing, mutating something outside the comprehension) — if you're not building a new collection, use a regular loop, it's more readable.",
+    "Deeply nested comprehensions (3+ levels) trade readability for cleverness — fall back to a loop once it stops being scannable at a glance.",
+    "A comprehension creates its own scope in Python 3 — the loop variable inside it doesn't leak into the surrounding scope, unlike a regular for loop's variable.",
+  ],
+  practiceExercises: [
+    "Rewrite a for-loop-plus-append pattern from an earlier page as a comprehension",
+    "Build a dict comprehension that maps each word in a sentence to its length",
+    "Flatten a 3x3 grid into a single list using a nested comprehension",
+  ],
+  quiz: [
+    {
+      question: "What's the closest Java analog to a Python list comprehension?",
+      options: [
+        "Java 8+ Streams (.stream().map().collect()), though more verbose",
+        "A for-each loop, with no real equivalent",
+        "ArrayList's constructor",
+        "Ternary expressions",
+      ],
+      correct: 0,
+      explanation: "Streams accomplish the same transform/filter/collect goal, just via a chained pipeline API rather than inline syntax.",
+    },
+    {
+      question: "How do you filter elements in a comprehension?",
+      options: [
+        "Append an if clause directly: [x for x in items if condition]",
+        "Use a separate .filter() method call",
+        "Comprehensions can't filter, only transform",
+        "Use a try/except block",
+      ],
+      correct: 0,
+      explanation: "The optional trailing if clause is evaluated for each item, and only items where it's true are included.",
+    },
+    {
+      question: "What does `[num for row in grid for num in row]` do?",
+      options: [
+        "Flattens a 2D grid into a single 1D list, iterating rows then elements within each row",
+        "Transposes the grid",
+        "Sorts the grid",
+        "Raises a syntax error",
+      ],
+      correct: 0,
+      explanation: "The for clauses execute left to right, exactly like nested loops written in that order — outer over rows, inner over each row's elements.",
+    },
+    {
+      question: "Is a list comprehension generally faster in Big-O terms than the equivalent explicit for-loop?",
+      options: [
+        "No — same O(n) complexity; it's a readability/expressiveness improvement, not an algorithmic one",
+        "Yes, always O(1) faster",
+        "Yes, it parallelizes automatically",
+        "No, it's always slower",
+      ],
+      correct: 0,
+      explanation: "Comprehensions can have a small constant-factor speed edge from reduced bytecode overhead, but they don't change the underlying complexity class.",
+    },
+    {
+      question: "What happens to the loop variable used inside a comprehension in Python 3?",
+      options: [
+        "It stays scoped to the comprehension and doesn't leak into the surrounding code",
+        "It overwrites any same-named variable in the enclosing scope",
+        "It becomes a global variable",
+        "It must be declared before the comprehension",
+      ],
+      correct: 0,
+      explanation: "Unlike Python 2, comprehensions in Python 3 have their own scope, so their loop variables don't bleed into or clobber the enclosing function's namespace.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>

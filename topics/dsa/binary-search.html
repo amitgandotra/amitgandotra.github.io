@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Binary Search — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "binary-search",
+  summary: "Binary search halves the search space each step by exploiting monotonicity — sorted order, or any condition that flips from false to true. O(log n) instead of O(n), and it generalizes far beyond sorted arrays.",
+  recognize: [
+    "Data is sorted, or you can define a monotonic predicate over a range",
+    "'Find the minimum/maximum value satisfying condition X' &rarr; binary search on the answer space",
+    "Problem naturally wants O(n) but the constraints demand O(log n)",
+    "Rotated sorted array problems",
+  ],
+  template: {
+    note: "The textbook search-for-a-value form.",
+    code: `def binary_search(nums, target):
+    left, right = 0, len(nums) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if nums[mid] == target:
+            return mid
+        elif nums[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1`,
+  },
+  examples: [
+    {
+      title: "Search in Rotated Sorted Array",
+      prompt: "Search for a target in a rotated sorted array (no duplicates) in O(log n).",
+      code: `def search_rotated(nums, target):
+    left, right = 0, len(nums) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if nums[mid] == target:
+            return mid
+        if nums[left] <= nums[mid]:       # left half is sorted
+            if nums[left] <= target < nums[mid]:
+                right = mid - 1
+            else:
+                left = mid + 1
+        else:                              # right half is sorted
+            if nums[mid] < target <= nums[right]:
+                left = mid + 1
+            else:
+                right = mid - 1
+    return -1`,
+      explanation: "At every step, one half of the current range is guaranteed sorted. Figure out which half that is, then check whether the target falls inside that sorted half's value range to decide which side to discard.",
+      complexity: "Time: O(log n) · Space: O(1)",
+      complexityWhy: "Each iteration eliminates half of the remaining search range, exactly as in standard binary search, so the number of iterations is bounded by log2(n). Only a constant number of pointer variables are tracked, so space stays O(1).",
+    },
+    {
+      title: "Koko Eating Bananas (search on the answer)",
+      prompt: "Koko has piles of bananas and h hours. Find the minimum eating speed k such that she can finish all piles within h hours.",
+      code: `import math
+
+def min_eating_speed(piles, h):
+    lo, hi = 1, max(piles)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        hours = sum(math.ceil(p / mid) for p in piles)
+        if hours <= h:
+            hi = mid
+        else:
+            lo = mid + 1
+    return lo`,
+      explanation: "The feasibility check 'can Koko finish within h hours at speed k' is monotonic in k — true for k implies true for every larger k. So binary search over the speed itself, not the array, shrinking toward the smallest feasible speed.",
+      complexity: "Time: O(n log(max(piles))) · Space: O(1)",
+      complexityWhy: "The binary search over possible speeds takes O(log(max(piles))) iterations, and each iteration computes the total hours by scanning all n piles, giving O(n) work per iteration. Multiplying gives O(n log(max(piles))) overall; no extra structures grow with input, so space is O(1).",
+    },
+  ],
+  practiceProblems: [
+    "Binary Search",
+    "Search in Rotated Sorted Array",
+    "Find Minimum in Rotated Sorted Array",
+    "Koko Eating Bananas",
+    "Median of Two Sorted Arrays",
+    "Time Based Key-Value Store",
+  ],
+  quiz: [
+    {
+      question: "Binary search requires what property over the search space?",
+      options: [
+        "It must be an array of integers",
+        "Monotonicity — a predicate that flips from false to true (or vice versa)",
+        "It must be a linked list",
+        "It must contain no duplicates",
+      ],
+      correct: 1,
+      explanation: "As long as you can define a monotonic true/false condition over the range, you can binary search it — the range doesn't need to be a literal sorted array.",
+    },
+    {
+      question: "What's the time complexity of binary search on n sorted elements?",
+      options: ["O(n)", "O(log n)", "O(n log n)", "O(1)"],
+      correct: 1,
+      explanation: "Each comparison eliminates half the remaining space, giving log2(n) steps.",
+    },
+    {
+      question: "In 'search on the answer' problems like Koko Eating Bananas, what are you binary searching over?",
+      options: [
+        "The array indices",
+        "A range of possible answer values, using a feasibility check as the comparator",
+        "A hashmap of values",
+        "A random subset of the array",
+      ],
+      correct: 1,
+      explanation: "You're not searching the input array at all — you're searching the space of possible answers (eating speeds) for the smallest one that satisfies the constraint.",
+    },
+    {
+      question: "In rotated sorted array search, how do you know which half of the current range is sorted?",
+      options: [
+        "You can't — you have to scan linearly",
+        "Compare nums[left] to nums[mid]; whichever side is non-decreasing is sorted",
+        "Always assume the left half is sorted",
+        "Check only the middle element",
+      ],
+      correct: 1,
+      explanation: "A rotated sorted array always has at least one half of any subrange fully sorted; comparing the endpoints tells you which.",
+    },
+    {
+      question: "What's a common source of off-by-one bugs in binary search?",
+      options: [
+        "Mismatching the loop condition (left <= right vs left < right) with how mid is used to update bounds",
+        "Using integer division for mid",
+        "Both of the above are common sources",
+        "Neither — binary search has no edge cases",
+      ],
+      correct: 2,
+      explanation: "Both the loop condition and integer division/rounding for mid are classic places binary search implementations go subtly wrong.",
+    },
+  ],
+};
+</script>
+<script src="../../js/pattern-page.js"></script>
+</body>
+</html>

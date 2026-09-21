@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Heap / Priority Queue — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "heap",
+  summary: "A binary heap gives O(log n) insert and extract-min/max, with O(1) peek. Reach for it whenever you need the 'top k' of something, or repeatedly need the current min/max as data streams in.",
+  recognize: [
+    "'Kth largest/smallest' or 'top k' language in the problem",
+    "Need to repeatedly extract the min or max as data arrives",
+    "Merging k sorted lists or arrays",
+    "Scheduling / greedy problems where you always want the next-best available option",
+  ],
+  template: {
+    note: "Python's heapq is a min-heap. Capping it at size k and popping the smallest gives you the k largest elements seen so far.",
+    code: `import heapq
+
+def kth_largest(nums, k):
+    heap = []
+    for n in nums:
+        heapq.heappush(heap, n)
+        if len(heap) > k:
+            heapq.heappop(heap)
+    return heap[0]`,
+  },
+  examples: [
+    {
+      title: "Top K Frequent Elements",
+      prompt: "Given an array of integers, return the k most frequent elements.",
+      code: `import heapq
+from collections import Counter
+
+def top_k_frequent(nums, k):
+    freq = Counter(nums)
+    return heapq.nlargest(k, freq.keys(), key=freq.get)`,
+      explanation: "Build a frequency map, then use nlargest, which internally maintains a heap of size k rather than sorting the entire frequency map — O(n log k) instead of O(n log n).",
+      complexity: "Time: O(n log k) · Space: O(n)",
+      complexityWhy: "Building the frequency map costs O(n). Maintaining the heap in nlargest at size k means each of the n elements triggers at most an O(log k) heap operation, giving O(n log k) total — cheaper than fully sorting all n elements when k is small. The frequency map itself holds up to n distinct keys, giving O(n) space.",
+    },
+    {
+      title: "Merge k Sorted Lists",
+      prompt: "Merge k sorted linked lists into one sorted linked list.",
+      code: `import heapq
+
+def merge_k_lists(lists):
+    heap = []
+    for i, node in enumerate(lists):
+        if node:
+            heapq.heappush(heap, (node.val, i, node))
+
+    dummy = ListNode()
+    tail = dummy
+    while heap:
+        val, i, node = heapq.heappop(heap)
+        tail.next = node
+        tail = tail.next
+        if node.next:
+            heapq.heappush(heap, (node.next.val, i, node.next))
+    return dummy.next`,
+      explanation: "Keep exactly one candidate node per list in the heap. Always pop the globally smallest, attach it to the result, and push its successor from the same list. The list index i is included purely as a tiebreaker, since ListNode objects aren't directly comparable when values are equal.",
+      complexity: "Time: O(N log k), N = total nodes, k = number of lists · Space: O(k)",
+      complexityWhy: "Every one of the N total nodes across all lists is pushed and popped from the heap exactly once, and the heap never holds more than k elements (one per list) at a time, so each push/pop costs O(log k). Multiplying N operations by O(log k) each gives O(N log k); the heap's O(k) size is the space bound.",
+    },
+  ],
+  practiceProblems: [
+    "Kth Largest Element in an Array",
+    "Top K Frequent Elements",
+    "K Closest Points to Origin",
+    "Task Scheduler",
+    "Merge k Sorted Lists",
+    "Find Median from Data Stream",
+  ],
+  quiz: [
+    {
+      question: "What's the time complexity of inserting into or extracting the min from a binary heap of size n?",
+      options: ["O(log n)", "O(n)", "O(1)", "O(n log n)"],
+      correct: 0,
+      explanation: "Heap operations only need to fix up/down along one root-to-leaf path, which has height log n.",
+    },
+    {
+      question: "To find the k largest elements efficiently with a heap, what do you maintain?",
+      options: [
+        "A min-heap of size k, popping whenever it exceeds size k",
+        "A max-heap of size n",
+        "A min-heap of size n",
+        "A stack of size k",
+      ],
+      correct: 0,
+      explanation: "Capping a min-heap at size k means the smallest of the current top-k is always at the root, ready to be evicted when a larger element arrives.",
+    },
+    {
+      question: "Python's heapq module implements...",
+      options: ["A min-heap by default", "A max-heap by default", "A balanced BST", "A doubly linked list"],
+      correct: 0,
+      explanation: "To simulate a max-heap in Python, you typically negate values before pushing.",
+    },
+    {
+      question: "In Merge k Sorted Lists, why does the heap entry need a tiebreaker (like list index) alongside the node value?",
+      options: [
+        "ListNode objects aren't directly comparable when values tie, so Python's heap comparison would error",
+        "It's purely optional and never actually needed",
+        "To keep the heap sorted by index only",
+        "To avoid using O(k) space",
+      ],
+      correct: 0,
+      explanation: "When two node values are equal, Python falls through to comparing the next tuple element — without an index, it would try to compare ListNode objects directly and raise an error.",
+    },
+    {
+      question: "What's the time complexity of Merge k Sorted Lists with N total nodes across k lists, using a heap?",
+      options: ["O(N log k)", "O(N * k)", "O(N log N), regardless of k", "O(k log k)"],
+      correct: 0,
+      explanation: "Each of the N nodes is pushed and popped once, and the heap never holds more than k elements at a time, so each operation costs O(log k).",
+    },
+  ],
+};
+</script>
+<script src="../../js/pattern-page.js"></script>
+</body>
+</html>

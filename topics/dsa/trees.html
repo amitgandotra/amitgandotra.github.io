@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trees — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "trees",
+  summary: "Recursive DFS (preorder/inorder/postorder) and level-order BFS are the two lenses for tree problems. Almost every tree problem reduces to 'combine information returned from the left and right subtrees.'",
+  recognize: [
+    "Problem gives a TreeNode with .left / .right",
+    "Need something computed bottom-up (height, sum, balanced check) &rarr; post-order DFS returning values",
+    "Need level-by-level processing &rarr; BFS with a queue",
+    "Need root-to-leaf path logic &rarr; pre-order DFS with a path/accumulator",
+  ],
+  template: {
+    note: "The generic post-order DFS shape most tree solutions follow.",
+    code: `def dfs(node):
+    if not node:
+        return base_case
+    left = dfs(node.left)
+    right = dfs(node.right)
+    return combine(node, left, right)`,
+  },
+  examples: [
+    {
+      title: "Maximum Depth of Binary Tree",
+      prompt: "Given the root of a binary tree, return its maximum depth.",
+      code: `def max_depth(root):
+    if not root:
+        return 0
+    return 1 + max(max_depth(root.left), max_depth(root.right))`,
+      explanation: "Classic post-order recursion: the depth of a node is 1 plus the deeper of its two subtrees. A null node contributes 0, acting as the correct base case for the max() combination.",
+      complexity: "Time: O(n) · Space: O(h), h = tree height, for the recursion stack",
+      complexityWhy: "Every node in the tree is visited exactly once by the recursion, giving O(n) total calls. The space cost comes from the recursion call stack, which grows as deep as the tree is tall — O(h), which is O(log n) for a balanced tree but can degrade to O(n) for a skewed one.",
+    },
+    {
+      title: "Binary Tree Level Order Traversal",
+      prompt: "Given the root of a binary tree, return the level order traversal of its nodes' values, grouped by level.",
+      code: `from collections import deque
+
+def level_order(root):
+    if not root:
+        return []
+    result = []
+    queue = deque([root])
+    while queue:
+        level = []
+        for _ in range(len(queue)):
+            node = queue.popleft()
+            level.append(node.val)
+            if node.left:
+                queue.append(node.left)
+            if node.right:
+                queue.append(node.right)
+        result.append(level)
+    return result`,
+      explanation: "Snapshotting len(queue) at the top of each iteration captures exactly the nodes belonging to the current level, so children appended during the loop don't bleed into the current level's count.",
+      complexity: "Time: O(n) · Space: O(n)",
+      complexityWhy: "Every node is enqueued and dequeued exactly once, giving O(n) time. In the worst case (a wide tree, like a complete binary tree's last level) the queue can hold up to roughly n/2 nodes at once, which rounds to O(n) space.",
+    },
+  ],
+  practiceProblems: [
+    "Maximum Depth of Binary Tree",
+    "Same Tree",
+    "Invert Binary Tree",
+    "Binary Tree Level Order Traversal",
+    "Validate Binary Search Tree",
+    "Lowest Common Ancestor of a BST",
+    "Serialize and Deserialize Binary Tree",
+  ],
+  quiz: [
+    {
+      question: "Most tree problems reduce to...",
+      options: [
+        "Combining information returned from the left and right subtrees",
+        "Sorting the tree",
+        "Converting the tree to a linked list first",
+        "Applying dynamic programming exclusively",
+      ],
+      correct: 0,
+      explanation: "Recursive DFS naturally computes a value per subtree and combines left + right + current node into a result.",
+    },
+    {
+      question: "Which data structure powers BFS / level-order processing?",
+      options: ["A stack", "A queue", "A hashmap", "Recursion only"],
+      correct: 1,
+      explanation: "FIFO order is exactly what's needed to process nodes level by level.",
+    },
+    {
+      question: "Why does the level-order BFS template snapshot len(queue) before the inner loop?",
+      options: [
+        "To know exactly how many nodes belong to the current level, before children get appended",
+        "It's purely cosmetic and not necessary",
+        "To reverse the traversal order",
+        "To detect cycles in the tree",
+      ],
+      correct: 0,
+      explanation: "Without the snapshot, appended children would mix into the current level's iteration count.",
+    },
+    {
+      question: "In Maximum Depth of Binary Tree, why does the base case return 0 for a null node?",
+      options: [
+        "A null node contributes no depth, so 0 is the correct identity value for the max() combination",
+        "It's an arbitrary choice with no real reason",
+        "It should actually return 1",
+        "It should actually return -1",
+      ],
+      correct: 0,
+      explanation: "1 + max(0, 0) correctly gives depth 1 for a single leaf node, which only works if null returns 0.",
+    },
+    {
+      question: "What's the space complexity of a DFS recursion on a tree of height h?",
+      options: [
+        "O(h) for the call stack",
+        "O(n) always, regardless of height",
+        "O(1)",
+        "O(log n) always, regardless of shape",
+      ],
+      correct: 0,
+      explanation: "The recursion stack depth equals the height of the tree, which is O(log n) for balanced trees but can be O(n) for a skewed one.",
+    },
+  ],
+};
+</script>
+<script src="../../js/pattern-page.js"></script>
+</body>
+</html>

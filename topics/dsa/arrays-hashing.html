@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Arrays & Hashing — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "arrays-hashing",
+  summary: "Arrays and hash maps/sets are the substrate of almost every coding interview problem. Hashing trades space for time, turning O(n) or O(n^2) lookups into O(1) average — the single highest-leverage trick in this whole roadmap.",
+  recognize: [
+    "Need to check whether something has been seen before &rarr; use a set",
+    "Need to count frequencies of elements &rarr; use a dict / Counter",
+    "Need to find a complement (e.g. target - x) &rarr; use a value&rarr;index hashmap",
+    "Problem mentions an array of size n and expects an O(n) or O(n log n) solution",
+  ],
+  template: {
+    note: "Most array/hashing problems are either one pass with a running dict, or two passes: build a map, then query it.",
+    code: `def build_frequency_map(nums):
+    freq = {}
+    for n in nums:
+        freq[n] = freq.get(n, 0) + 1
+    return freq`,
+  },
+  examples: [
+    {
+      title: "Two Sum",
+      prompt: "Given an array of integers nums and an integer target, return the indices of the two numbers that add up to target. Assume exactly one solution exists.",
+      code: `def two_sum(nums, target):
+    seen = {}  # value -> index
+    for i, n in enumerate(nums):
+        complement = target - n
+        if complement in seen:
+            return [seen[complement], i]
+        seen[n] = i
+    return []`,
+      explanation: "Instead of checking every pair (O(n^2)), store each number's index as you scan. Before inserting the current number, check whether its complement already exists in the map — if so, you've found the pair in a single pass.",
+      complexity: "Time: O(n) · Space: O(n)",
+      complexityWhy: "The array is scanned once (n iterations), and each iteration does O(1) work: one hash lookup and one hash insert. The seen map can hold up to n entries by the time the loop ends, which is where the O(n) space comes from.",
+    },
+    {
+      title: "Group Anagrams",
+      prompt: "Given an array of strings, group the anagrams together.",
+      code: `def group_anagrams(strs):
+    groups = {}
+    for s in strs:
+        key = "".join(sorted(s))
+        groups.setdefault(key, []).append(s)
+    return list(groups.values())`,
+      explanation: "Anagrams share the same sorted character sequence, so the sorted string makes a natural hashmap key. Every original string gets bucketed under its signature in a single pass.",
+      complexity: "Time: O(n * k log k), k = max string length · Space: O(n * k)",
+      complexityWhy: "There are n strings, and sorting each one costs O(k log k) where k is that string's length. Multiplying the per-string sort cost by n strings gives O(n * k log k) overall. Space is O(n * k) because the output holds every input character exactly once, grouped into buckets.",
+    },
+  ],
+  practiceProblems: [
+    "Two Sum",
+    "Contains Duplicate",
+    "Valid Anagram",
+    "Group Anagrams",
+    "Top K Frequent Elements",
+    "Product of Array Except Self",
+    "Longest Consecutive Sequence",
+  ],
+  quiz: [
+    {
+      question: "You need to check whether an array contains any duplicate values in better than O(n^2). What's the go-to structure?",
+      options: ["Sorted array + binary search", "Hash set", "Linked list", "Stack"],
+      correct: 1,
+      explanation: "A hash set gives O(1) average lookup, letting you detect a repeat in a single O(n) pass.",
+    },
+    {
+      question: "What is the average-case time complexity of a hash map lookup?",
+      options: ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+      correct: 0,
+      explanation: "Hash maps give O(1) average-case lookup/insert; worst case is O(n) under heavy collisions, but that's rare with a good hash function.",
+    },
+    {
+      question: "In Two Sum, why check for the complement before inserting the current number into the map?",
+      options: [
+        "It doesn't matter, order is irrelevant",
+        "To avoid pairing an element with itself",
+        "To keep the map sorted",
+        "To save memory",
+      ],
+      correct: 1,
+      explanation: "Checking first ensures you never pair an element with itself when target equals 2 * nums[i].",
+    },
+    {
+      question: "Which problem is the worst fit for a plain hashmap-based approach?",
+      options: [
+        "Counting character frequency",
+        "Finding the running median of a stream of numbers",
+        "Detecting duplicates",
+        "Grouping anagrams",
+      ],
+      correct: 1,
+      explanation: "A streaming median needs an order-statistics structure like two heaps — hashmaps don't preserve rank or order.",
+    },
+    {
+      question: "For n strings of max length k, what's the time complexity of grouping anagrams by sorting each string as the map key?",
+      options: ["O(n)", "O(n * k)", "O(n * k log k)", "O(n^2 * k)"],
+      correct: 2,
+      explanation: "Sorting each string costs O(k log k); doing that for all n strings gives O(n * k log k).",
+    },
+  ],
+};
+</script>
+<script src="../../js/pattern-page.js"></script>
+</body>
+</html>

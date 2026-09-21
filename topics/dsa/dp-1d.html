@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>1-D Dynamic Programming — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "dp-1d",
+  summary: "Break a problem into overlapping subproblems indexed by a single variable (position, amount, or length), and cache results to avoid recomputation. Recognize it by noticing brute-force recursion would re-solve the same subproblem over and over.",
+  recognize: [
+    "Optimal substructure: the answer at position i depends on answers at smaller positions",
+    "Brute-force recursion would re-solve identical subproblems (overlapping subproblems)",
+    "Keywords: 'number of ways', 'minimum/maximum cost to reach', 'can you reach...'",
+    "State can be described by a single index: day, amount, or position in a string",
+  ],
+  template: {
+    note: "Top-down memoization. Bottom-up (tabulation) does the same thing iteratively, and often gets O(1) space if only the last few states matter.",
+    code: `def fib_memo(n, memo={}):
+    if n <= 1:
+        return n
+    if n in memo:
+        return memo[n]
+    memo[n] = fib_memo(n - 1, memo) + fib_memo(n - 2, memo)
+    return memo[n]`,
+  },
+  examples: [
+    {
+      title: "House Robber",
+      prompt: "Given nums representing money in houses arranged in a row, you cannot rob two adjacent houses. Return the maximum money you can rob.",
+      code: `def rob(nums):
+    prev, curr = 0, 0
+    for n in nums:
+        prev, curr = curr, max(curr, prev + n)
+    return curr`,
+      explanation: "curr represents the best result including house i; prev is the best result up through house i-1. At each house you either skip it (keep curr) or rob it (prev + n). Rolling two variables instead of a full array gives O(1) space.",
+      complexity: "Time: O(n) · Space: O(1)",
+      complexityWhy: "The array is scanned once, with O(1) work updating the two rolling variables per house, giving O(n) time. Because only the previous two states are ever needed, no array proportional to n is allocated, giving O(1) space.",
+    },
+    {
+      title: "Coin Change",
+      prompt: "Given coin denominations and a target amount, return the fewest number of coins needed to make that amount, or -1 if it can't be made.",
+      code: `def coin_change(coins, amount):
+    dp = [0] + [float("inf")] * amount
+    for a in range(1, amount + 1):
+        for c in coins:
+            if c <= a:
+                dp[a] = min(dp[a], dp[a - c] + 1)
+    return dp[amount] if dp[amount] != float("inf") else -1`,
+      explanation: "dp[a] holds the minimum coins to make amount a. For each amount, try every coin as 'the last coin used' and build on the best result for the smaller amount already solved.",
+      complexity: "Time: O(amount * len(coins)) · Space: O(amount)",
+      complexityWhy: "For each of the `amount` possible sub-amounts, the algorithm tries every one of the `len(coins)` denominations, giving amount * len(coins) total operations. The dp array holds one entry per possible amount from 0 to amount, giving O(amount) space.",
+    },
+  ],
+  practiceProblems: [
+    "Climbing Stairs",
+    "House Robber",
+    "Coin Change",
+    "Longest Increasing Subsequence",
+    "Word Break",
+    "Decode Ways",
+  ],
+  quiz: [
+    {
+      question: "1-D DP problems are recognized by state that can be described with...",
+      options: ["A single index, like position, day, or amount", "A 2D grid always", "A graph structure", "A sorted array only"],
+      correct: 0,
+      explanation: "That's the defining feature separating 1-D DP from 2-D DP, where two indices are needed.",
+    },
+    {
+      question: "What's the core inefficiency that DP eliminates versus naive recursion?",
+      options: [
+        "Recomputing the same overlapping subproblems repeatedly",
+        "Using too much memory always",
+        "Using loops instead of recursion",
+        "Sorting the input unnecessarily",
+      ],
+      correct: 0,
+      explanation: "Naive recursion without memoization revisits identical subproblems exponentially many times; caching turns that into linear or polynomial work.",
+    },
+    {
+      question: "In House Robber, why does the O(1) space solution only need two rolling variables?",
+      options: [
+        "Because the answer at house i only depends on the results from houses i-1 and i-2",
+        "Because there are only 2 houses in the problem",
+        "Because it's not actually O(1)",
+        "Because memoization always requires exactly 2 variables",
+      ],
+      correct: 0,
+      explanation: "The recurrence only reaches back two steps, so there's no need to store the full DP array.",
+    },
+    {
+      question: "In Coin Change, what does dp[a] represent?",
+      options: [
+        "The minimum number of coins needed to make amount a",
+        "The maximum number of coins for amount a",
+        "The number of ways to make amount a",
+        "Whether amount a is reachable, true/false",
+      ],
+      correct: 0,
+      explanation: "Each dp[a] is built by taking the best (minimum) result from dp[a - coin] + 1 across all valid coins.",
+    },
+    {
+      question: "Top-down (memoization) and bottom-up (tabulation) DP differ mainly in...",
+      options: [
+        "Recursive-with-a-cache vs iterative-filling-a-table, but they solve the same subproblems",
+        "They solve fundamentally different problems",
+        "Top-down is always faster",
+        "Bottom-up can never achieve O(1) space",
+      ],
+      correct: 0,
+      explanation: "Both approaches compute the same set of subproblem results — they just traverse the dependency graph in opposite directions.",
+    },
+  ],
+};
+</script>
+<script src="../../js/pattern-page.js"></script>
+</body>
+</html>

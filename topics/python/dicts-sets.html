@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dicts & Sets — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "dicts-sets",
+  summary: "dict is Java's HashMap and set is Java's HashSet, but both come with literal syntax and comprehensions built directly into the language, making them far more idiomatic to construct and query on the fly.",
+  keyDifferences: [
+    "Java: <code>Map&lt;String, Integer&gt; m = new HashMap&lt;&gt;();</code> requires explicit types. Python: <code>m = {\"a\": 1, \"b\": 2}</code> — a dict literal.",
+    "Java: <code>m.get(key)</code> returns null if missing; <code>.getOrDefault(key, default)</code> for a fallback. Python: <code>m[key]</code> raises KeyError if missing; <code>m.get(key, default)</code> mirrors getOrDefault; dict also has a first-class <code>in</code> operator.",
+    "Java: <code>HashSet&lt;String&gt; s = new HashSet&lt;&gt;();</code>. Python: <code>s = {\"a\", \"b\", \"c\"}</code> — a set literal (note: <code>{}</code> alone is an empty dict, not an empty set).",
+    "Java: iterating a HashMap via <code>.entrySet()</code> or <code>.keySet()</code>. Python: <code>for key, value in m.items():</code> — direct unpacking, no wrapper Entry objects.",
+    "Java 8+: <code>Map.computeIfAbsent</code> / <code>merge</code> for default-on-missing patterns. Python: <code>collections.defaultdict</code> does this structurally, and <code>dict.setdefault()</code> is the inline equivalent.",
+  ],
+  template: {
+    note: "The dict/set moves that show up in nearly every DSA pattern.",
+    code: `freq = {}
+freq["a"] = freq.get("a", 0) + 1     # classic "count occurrences" idiom
+
+for key, value in freq.items():
+    print(key, value)
+
+seen = set()
+seen.add("x")
+print("x" in seen)      # O(1) average membership check`,
+  },
+  examples: [
+    {
+      title: "dict as a frequency counter",
+      prompt: "Count character frequency in a string, the manual way and the idiomatic way.",
+      code: `from collections import Counter
+
+s = "mississippi"
+
+# manual version
+freq = {}
+for ch in s:
+    freq[ch] = freq.get(ch, 0) + 1
+
+# idiomatic version -- Counter does exactly this in one call
+freq2 = Counter(s)
+print(freq2.most_common(2))   # [('i', 4), ('s', 4)]`,
+      explanation: "<code>.get(key, 0)</code> is the standard way to avoid a KeyError when a key might not exist yet — Python's version of Java's getOrDefault. <code>collections.Counter</code> (covered fully on the stdlib page) is purpose-built for exactly this pattern and adds convenience methods like <code>.most_common()</code> on top.",
+      output: "[('i', 4), ('s', 4)]",
+    },
+    {
+      title: "Dict comprehension + set algebra",
+      prompt: "Build a dict from two lists, and use real set operators for comparisons.",
+      code: `keys = ["a", "b", "c"]
+values = [1, 2, 3]
+lookup = {k: v for k, v in zip(keys, values)}   # dict comprehension
+
+a = {1, 2, 3, 4}
+b = {3, 4, 5, 6}
+print(a & b)     # {3, 4} -- intersection
+print(a | b)      # {1, 2, 3, 4, 5, 6} -- union
+print(a - b)       # {1, 2} -- difference`,
+      explanation: "<code>zip</code> pairs up two iterables element-wise, and the dict comprehension builds the mapping in one expression — no explicit loop needed, unlike Java's typical for-loop-plus-put() construction. Python's set supports mathematical set operators directly (&, |, -), whereas Java's Set requires method calls like retainAll/addAll/removeAll that mutate in place.",
+      output: "{3, 4}",
+    },
+  ],
+  gotchas: [
+    "<code>{}</code> is an empty dict, not an empty set — use <code>set()</code> for an empty set.",
+    "<code>m[key]</code> raises KeyError for a missing key, unlike Java's HashMap.get() returning null — use <code>.get()</code> or <code>in</code> to check first, or <code>defaultdict</code> to sidestep the check entirely.",
+    "Dict keys (and set elements) must be hashable — lists can't be dict keys or set members, but tuples can.",
+  ],
+  practiceExercises: [
+    "Count word frequency in a sentence using both the manual dict.get() approach and Counter",
+    "Build a dict comprehension mapping each word in a list to its length",
+    "Use set intersection to find common elements between two lists",
+  ],
+  quiz: [
+    {
+      question: "What's the Python equivalent of Java's `map.getOrDefault(key, 0)`?",
+      options: ["dict.get(key, 0)", "dict[key]", "dict.setdefault(key)", "dict.keys()"],
+      correct: 0,
+      explanation: ".get() accepts a fallback default as its second argument, returned when the key is absent — a direct match for getOrDefault.",
+    },
+    {
+      question: "What does `{}` create in Python?",
+      options: ["An empty dict — use set() for an empty set", "An empty set", "A syntax error", "An empty list"],
+      correct: 0,
+      explanation: "Curly braces default to dict syntax; there's no empty-set literal, so set() is required.",
+    },
+    {
+      question: "What happens when you access a missing key with `m[key]` (not .get)?",
+      options: [
+        "It raises a KeyError",
+        "It returns None, like Java's HashMap.get()",
+        "It returns 0",
+        "It silently creates the key with value None",
+      ],
+      correct: 0,
+      explanation: "Bracket access is strict — a missing key is treated as an error, not a null-like sentinel.",
+    },
+    {
+      question: "Which Python types can be used as dict keys or set elements?",
+      options: [
+        "Only hashable (typically immutable) types — tuples work, lists don't",
+        "Any type, including lists",
+        "Only strings and numbers",
+        "Only integers",
+      ],
+      correct: 0,
+      explanation: "Hashing requires the value not to change, which is why mutable types like list are disallowed as keys/elements.",
+    },
+    {
+      question: "What does `a & b` do for two Python sets?",
+      options: ["Returns their intersection", "Returns their union", "Returns their difference", "Raises a TypeError"],
+      correct: 0,
+      explanation: "& is the intersection operator; | is union and - is difference, mirroring standard set notation.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>

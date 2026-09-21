@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Environment & Running Python — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "environment",
+  summary: "Before writing any Python, get comfortable with how Python code actually runs and how dependencies get isolated per project. This is the Python-world equivalent of understanding your JDK, classpath, and Maven/Gradle setup.",
+  keyDifferences: [
+    "Java: JVM + classpath + Maven/Gradle dependency resolution. Python: the interpreter directly executes .py files; dependencies are just installed packages sitting on a path.",
+    "Java: a build tool assembles dependencies into/alongside a .jar. Python: a <strong>virtual environment</strong> (venv) is a private, isolated copy of the interpreter's package directory per project, so installing package X for project A never collides with project B needing a different version of X.",
+    "Java: pom.xml / build.gradle declare dependencies, resolved automatically. Python: a <strong>requirements.txt</strong> file declares them, installed explicitly via pip.",
+    "Java: one canonical entrypoint (`public static void main`) run via `java -jar` or an IDE config. Python has no enforced entrypoint — there are several legitimate ways to run the same code, covered below.",
+  ],
+  template: {
+    heading: "Virtual environments",
+    label: "shell",
+    note: "A venv keeps this project's installed packages separate from every other project and from your system Python. Create one per project, always.",
+    code: `# create a virtual environment named .venv in the current project folder
+python3 -m venv .venv
+
+# activate it (macOS/Linux)
+source .venv/bin/activate
+
+# activate it (Windows, PowerShell)
+.venv\\Scripts\\Activate.ps1
+
+# your shell prompt now shows (.venv) -- pip installs go here, not system-wide
+# to leave the venv:
+deactivate`,
+  },
+  examples: [
+    {
+      title: "requirements.txt",
+      label: "shell",
+      prompt: "The Python equivalent of a Maven pom.xml's <dependencies> block — plain text, one package (optionally pinned to a version) per line.",
+      code: `# requirements.txt
+requests==2.31.0
+flask>=3.0.0
+pytest
+
+# install everything listed, inside your active venv
+pip install -r requirements.txt
+
+# snapshot exactly what's currently installed, to regenerate requirements.txt
+pip freeze > requirements.txt`,
+      explanation: "requirements.txt is the simplest, most universal dependency manifest in Python — every tool and CI system understands it. Pinning versions (==) gives reproducible installs, like a Maven lock file; pytest with no version means \"latest\" the first time it's installed. `pip freeze` is how you generate the file from a working environment rather than writing it by hand.",
+    },
+    {
+      title: "The five ways to run Python code",
+      label: "shell",
+      prompt: "Unlike Java's single `java -jar app.jar` convention, Python code can be executed several different ways depending on the task.",
+      code: `# 1. Run a script directly -- most common, like running a .java file's main()
+python3 app.py
+
+# 2. Interactive REPL -- like jshell, for quick experiments
+python3
+>>> 2 + 2
+4
+
+# 3. Run a module by its import path (-m) -- runs __main__.py or a module's
+#    if __name__ == "__main__" block; resolves imports correctly for packages
+python3 -m mypackage.mymodule
+
+# 4. Inline one-liner -- no file needed at all
+python3 -c "print('hello')"
+
+# 5. Jupyter notebook -- cell-by-cell execution, common for data/ML work
+jupyter notebook`,
+      explanation: "Script mode (1) is what you'll use 90% of the time and is the direct analog of running a Java program. The REPL (2) is invaluable for testing a snippet before committing it to a file. `-m` (3) matters once your code is organized into packages, since it runs the module using proper package-relative imports the way a plain `python3 path/to/file.py` sometimes can't. (4) and (5) are situational: one-liners for quick checks, notebooks for exploratory/data work.",
+    },
+  ],
+  gotchas: [
+    "Forgetting to activate the venv before `pip install` — packages silently land in your system Python instead, and you won't notice until a teammate's `pip install -r requirements.txt` doesn't reproduce your environment.",
+    "There is no single 'the' Python on most machines — `python`, `python3`, and versioned binaries like `python3.12` can all point to different installs. Always check `python3 --version` in a fresh terminal.",
+    "`python file.py` and `python -m package.file` can behave differently for the same code if that code does relative imports — prefer `-m` once you have a real package structure.",
+  ],
+  practiceExercises: [
+    "Create a venv in an empty folder, activate it, and confirm `pip list` shows almost nothing installed",
+    "Install one package, run `pip freeze > requirements.txt`, then delete and recreate the venv from that file",
+    "Run the same one-line script three ways: as a file, via `-c`, and by pasting it into the REPL",
+  ],
+  quiz: [
+    {
+      question: "What's the closest Java equivalent to a Python virtual environment?",
+      options: [
+        "There isn't a direct one — it's closer to having a separate JDK + dependency set per project, rather than one global classpath",
+        "A .jar file",
+        "A single class file",
+        "The JVM garbage collector",
+      ],
+      correct: 0,
+      explanation: "Java projects typically share one JDK install and resolve dependencies per-project via Maven/Gradle without needing OS-level isolation; Python's package installs are global by default unless a venv isolates them, which is why venvs exist.",
+    },
+    {
+      question: "Why activate a venv before running `pip install`?",
+      options: [
+        "Without activation, the package installs into the system-wide Python instead of the project-local one, breaking isolation",
+        "It's purely cosmetic and has no functional effect",
+        "pip refuses to run at all without an active venv",
+        "It changes which version of pip's algorithm is used",
+      ],
+      correct: 0,
+      explanation: "Activation changes which `python`/`pip` binaries your shell resolves to, pointing them at the venv's private package directory instead of the system one.",
+    },
+    {
+      question: "What does `pip freeze > requirements.txt` do?",
+      options: [
+        "Writes every currently installed package and its exact version to the file, so the environment can be reproduced elsewhere",
+        "Deletes all installed packages",
+        "Installs packages from requirements.txt",
+        "Compiles Python code into a frozen binary",
+      ],
+      correct: 0,
+      explanation: "`pip freeze` lists installed packages in requirements.txt-compatible format; redirecting it into the file is the standard way to snapshot a working environment.",
+    },
+    {
+      question: "When should you prefer `python3 -m package.module` over `python3 path/to/file.py`?",
+      options: [
+        "Once your code is organized into a real package, since -m resolves imports relative to the package correctly",
+        "Never, they are always identical",
+        "Only when using Jupyter",
+        "Only for one-line scripts",
+      ],
+      correct: 0,
+      explanation: "Running a file directly can break relative imports inside a package because Python doesn't know the package context; `-m` runs it with that context intact.",
+    },
+    {
+      question: "A teammate says 'it works on my machine' after `pip install -r requirements.txt` produces different results for you both. What's the most likely cause?",
+      options: [
+        "One of you installed packages without an active venv, or requirements.txt has unpinned versions that resolved differently over time",
+        "requirements.txt files are randomized",
+        "pip is nondeterministic by design with no possible cause",
+        "Python itself changed behavior between runs",
+      ],
+      correct: 0,
+      explanation: "The two most common causes of environment drift are exactly these: installing outside an isolated venv, or unpinned ('latest') dependency versions resolving to different releases at different times.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>

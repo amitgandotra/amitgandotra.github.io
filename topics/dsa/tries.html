@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tries — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "tries",
+  summary: "A trie (prefix tree) is a nested structure of nodes keyed by character, purpose-built for prefix queries — autocomplete, dictionary lookups, and word search — in time proportional to word length, not dictionary size.",
+  recognize: [
+    "Need prefix matching or 'starts with' queries",
+    "Autocomplete, spell-check, or word validity against a dictionary",
+    "Many words share common prefixes and you want O(L) lookup independent of dictionary size",
+    "Wildcard-style word search ('a.c' matches 'abc', 'axc', ...)",
+  ],
+  template: {
+    note: "The base trie: insert, exact search, and prefix search.",
+    code: `class TrieNode:
+    def __init__(self):
+        self.children = {}
+        self.is_end = False
+
+class Trie:
+    def __init__(self):
+        self.root = TrieNode()
+
+    def insert(self, word):
+        node = self.root
+        for ch in word:
+            node = node.children.setdefault(ch, TrieNode())
+        node.is_end = True
+
+    def search(self, word):
+        node = self._find(word)
+        return node is not None and node.is_end
+
+    def starts_with(self, prefix):
+        return self._find(prefix) is not None
+
+    def _find(self, s):
+        node = self.root
+        for ch in s:
+            if ch not in node.children:
+                return None
+            node = node.children[ch]
+        return node`,
+  },
+  examples: [
+    {
+      title: "Implement Trie (Prefix Tree)",
+      prompt: "Implement insert, search, and startsWith for a trie, as shown in the template above.",
+      code: `trie = Trie()
+trie.insert("apple")
+trie.search("apple")       # True
+trie.search("app")         # False — not marked as a full word
+trie.starts_with("app")    # True — prefix exists`,
+      explanation: "Insertion walks down the tree, creating a child node per character. is_end distinguishes 'apple was inserted' from 'app is merely a prefix of something inserted' — the same path can represent both a prefix and a complete word depending on where is_end flags are set.",
+      complexity: "Insert/search/startsWith: Time O(L), L = word length · Space: O(total characters inserted)",
+      complexityWhy: "Each operation walks exactly one character-length path down the tree, so it costs O(L) regardless of how many other words are stored. Space is proportional to the total number of unique character-paths created across every inserted word, bounded by the sum of all word lengths.",
+    },
+    {
+      title: "Add and Search Word (with '.' wildcard)",
+      prompt: "Design a data structure that supports adding words and searching for a word where '.' can match any single character.",
+      code: `class WordDictionary:
+    def __init__(self):
+        self.root = TrieNode()
+
+    def add_word(self, word):
+        node = self.root
+        for ch in word:
+            node = node.children.setdefault(ch, TrieNode())
+        node.is_end = True
+
+    def search(self, word):
+        def dfs(node, i):
+            if i == len(word):
+                return node.is_end
+            ch = word[i]
+            if ch == ".":
+                return any(dfs(child, i + 1) for child in node.children.values())
+            if ch not in node.children:
+                return False
+            return dfs(node.children[ch], i + 1)
+        return dfs(self.root, 0)`,
+      explanation: "Insertion is unchanged. Search becomes a DFS: on a normal character it follows one child deterministically; on '.' it branches into every child at that node and returns True if any branch succeeds.",
+      complexity: "Add: O(L). Search: O(L) average, worst case O(26^L) if the word is all wildcards.",
+      complexityWhy: "With no wildcards, search behaves like the base trie — O(L). Each '.' forces the search to branch into every child at that node, and in the worst case (a word of all wildcards) that branching compounds multiplicatively across all L positions, giving up to 26^L explored paths.",
+    },
+  ],
+  practiceProblems: [
+    "Implement Trie (Prefix Tree)",
+    "Design Add and Search Words Data Structure",
+    "Word Search II",
+    "Replace Words",
+    "Longest Word in Dictionary",
+  ],
+  quiz: [
+    {
+      question: "A trie node's children are typically stored as...",
+      options: [
+        "A dict/hashmap keyed by character (or a fixed-size array for a fixed alphabet)",
+        "A single linked list",
+        "A binary search tree",
+        "A stack",
+      ],
+      correct: 0,
+      explanation: "Character-keyed lookup gives O(1) access to the next node while descending the trie.",
+    },
+    {
+      question: "What's the time complexity to search for a word of length L in a trie?",
+      options: [
+        "O(L), independent of how many words are stored",
+        "O(n), where n is the number of words stored",
+        "O(L^2)",
+        "O(log n)",
+      ],
+      correct: 0,
+      explanation: "You walk exactly L nodes down the tree regardless of how many other words share or diverge from that path.",
+    },
+    {
+      question: "When is a trie a better choice than a hash set of strings?",
+      options: [
+        "When you need prefix queries (startsWith, autocomplete), not just exact membership",
+        "Always — tries are strictly better in every case",
+        "Never — hash sets are always better",
+        "Only when the data is numeric",
+      ],
+      correct: 0,
+      explanation: "A hash set answers 'is this exact word present' in O(1) but can't efficiently answer 'does any word start with this prefix' — that's what the trie's structure is built for.",
+    },
+    {
+      question: "In the wildcard search for Add and Search Word, what happens when the search hits a '.' character?",
+      options: [
+        "It branches into a DFS over every child at that node",
+        "It fails immediately",
+        "It deterministically skips to the next node",
+        "It restarts the search from the root",
+      ],
+      correct: 0,
+      explanation: "'.' means 'any character', so the search must try all children at that position and succeed if any of them lead to a match.",
+    },
+    {
+      question: "What's the worst-case time to search a word of length L made entirely of wildcards, over a 26-letter alphabet?",
+      options: [
+        "O(26^L) in the worst case, since every level can branch",
+        "Always O(L), regardless of wildcards",
+        "O(L log L)",
+        "O(1)",
+      ],
+      correct: 0,
+      explanation: "Each wildcard can branch into up to 26 children, so an all-wildcard word can explore exponentially many paths in the worst case.",
+    },
+  ],
+};
+</script>
+<script src="../../js/pattern-page.js"></script>
+</body>
+</html>

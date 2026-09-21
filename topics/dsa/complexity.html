@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Big O: Time &amp; Space Complexity — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <div class="content">
+    <div class="breadcrumb"><a href="../../index.html">Becoming FDE</a> / <a href="index.html">DSA</a> / Big O: Time &amp; Space Complexity</div>
+    <span class="badge badge-foundations tier-tag">Foundations</span>
+    <h1>Big O: Time &amp; Space Complexity</h1>
+    <p>
+      Every pattern in this roadmap gets judged the same way: how does its runtime and memory
+      usage grow as the input grows? Big-O notation is the language for answering that. Get this
+      down cold before the patterns — every "Time / Space" tag you'll see from here on assumes
+      you can read and derive it yourself.
+    </p>
+
+    <h2>What Big-O actually measures</h2>
+    <p>
+      Big-O describes the <strong>upper bound on an algorithm's growth rate</strong> as input size
+      (n) approaches infinity — not the exact runtime in seconds, and not the runtime on any one
+      specific input. It answers: "if I double the input size, roughly how much more work does
+      this do?"
+    </p>
+
+    <div class="callout">
+      <div class="callout-title">Why constants and lower-order terms get dropped</div>
+      <p>
+        An algorithm that does exactly <code>3n + 5</code> operations is still O(n). As n grows
+        large, the <code>3</code> and the <code>+5</code> become irrelevant next to the fact that
+        work scales <em>linearly</em> with n — that shape is what Big-O captures. This is also why
+        O(2n) and O(n) are considered the same complexity class, even though one is literally
+        twice as slow in practice.
+      </p>
+    </div>
+
+    <h2>Common complexity classes</h2>
+    <p>Ordered best to worst. Everything in this roadmap lives somewhere on this ladder.</p>
+    <div class="complexity-table-wrap">
+      <table class="complexity-table">
+        <thead>
+          <tr><th>Notation</th><th>Name</th><th>Typical operation</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="tag">O(1)</td><td>Constant</td><td>Array index access, hashmap get/set</td></tr>
+          <tr><td class="tag">O(log n)</td><td>Logarithmic</td><td>Binary search, balanced BST insert/lookup</td></tr>
+          <tr><td class="tag">O(n)</td><td>Linear</td><td>Single pass over the input</td></tr>
+          <tr><td class="tag">O(n log n)</td><td>Linearithmic</td><td>Efficient sorting (merge sort, heapsort)</td></tr>
+          <tr><td class="tag">O(n&sup2;)</td><td>Quadratic</td><td>Nested loop comparing pairs</td></tr>
+          <tr><td class="tag">O(2&#8319;)</td><td>Exponential</td><td>Generating every subset</td></tr>
+          <tr><td class="tag">O(n!)</td><td>Factorial</td><td>Generating every permutation</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>How to analyze time complexity from code</h2>
+    <ul>
+      <li><strong>Sequential statements:</strong> costs add, but only the dominant (largest) term survives — O(n) + O(1) simplifies to O(n).</li>
+      <li><strong>Loops:</strong> multiply the cost of the loop body by the number of iterations.</li>
+      <li><strong>Nested loops:</strong> multiply the cost of each level — two nested loops over n each give O(n&sup2;).</li>
+      <li><strong>Shrinking loops:</strong> a loop that cuts the problem by a constant fraction each step (e.g. halving) is O(log n).</li>
+      <li><strong>Recursion:</strong> complexity is (number of calls) &times; (work per call) — count how many times the call tree touches the input overall.</li>
+    </ul>
+
+    <h3>Worked example</h3>
+    <p>Given an array, determine whether any two numbers sum to a target value.</p>
+    <div class="code-block">
+      <div class="code-label">python</div>
+      <pre><code id="code-1"></code></pre>
+    </div>
+    <p>
+      The single loop runs n times, and every operation inside it — the set lookup and the set
+      insert — is O(1) on average. Total time is n &times; O(1) = O(n). The set can grow to hold
+      up to n elements, so space is O(n) too.
+    </p>
+    <div class="complexity-line">Time: O(n) · Space: O(n)</div>
+
+    <h2>Space complexity</h2>
+    <p>
+      Space complexity measures <strong>auxiliary space</strong> — extra memory used beyond the
+      input itself — as a function of n. Two details trip people up constantly:
+    </p>
+    <ul>
+      <li>The <strong>call stack counts as space.</strong> A recursive function that goes n calls deep keeps n stack frames alive simultaneously, even if each frame only stores a constant amount of data.</li>
+      <li><strong>In-place</strong> means O(1) auxiliary space — you're modifying the input directly rather than allocating a new structure proportional to n.</li>
+    </ul>
+
+    <h3>Worked example</h3>
+    <p>The same result (n factorial), two implementations with different space profiles.</p>
+    <div class="code-block">
+      <div class="code-label">python</div>
+      <pre><code id="code-2"></code></pre>
+    </div>
+    <p>
+      Both run in O(n) time. But the recursive version keeps n stack frames alive at once — O(n)
+      auxiliary space — while the iterative version only ever needs a constant number of
+      variables, regardless of how large n gets, giving O(1) space.
+    </p>
+    <div class="complexity-line">Recursive: Time O(n) · Space O(n) — Iterative: Time O(n) · Space O(1)</div>
+
+    <div class="callout">
+      <div class="callout-title">Common mistakes</div>
+      <ul>
+        <li>Confusing average-case with worst-case — hashmap operations are O(1) average but O(n) worst case under heavy collisions.</li>
+        <li>Forgetting the call stack — recursion depth directly translates to space, even with no explicit data structure allocated.</li>
+        <li>Missing a hidden cost inside a loop — calling <code>sorted()</code> inside a loop that runs n times turns an apparent O(n) into O(n&sup2; log n).</li>
+        <li>String concatenation in a loop can silently become O(n&sup2;) in languages where strings are immutable, since each concatenation copies the whole string so far.</li>
+      </ul>
+    </div>
+
+    <h2>Practice problems</h2>
+    <ul class="practice-list">
+      <li>Analyze the time/space complexity of every worked example before reading its answer, on every pattern page in this roadmap</li>
+      <li>Rewrite a recursive solution iteratively and compare its space complexity</li>
+      <li>Find a nested loop in your own code and determine if it can be flattened to O(n)</li>
+    </ul>
+
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("code-1").innerHTML = highlightPython(`def has_pair_with_sum(nums, target):
+    seen = set()
+    for n in nums:
+        if target - n in seen:
+            return True
+        seen.add(n)
+    return False`);
+
+  document.getElementById("code-2").innerHTML = highlightPython(`def factorial_recursive(n):
+    if n <= 1:
+        return 1
+    return n * factorial_recursive(n - 1)
+
+def factorial_iterative(n):
+    result = 1
+    for i in range(2, n + 1):
+        result *= i
+    return result`);
+
+  renderSidebar("complexity");
+  renderPagination("complexity");
+  initMobileSidebarToggle();
+
+  const QUIZ = [
+    {
+      question: "What does Big-O notation describe?",
+      options: [
+        "The asymptotic upper bound on an algorithm's growth rate as input size approaches infinity, ignoring constants and lower-order terms",
+        "The exact runtime of an algorithm in seconds",
+        "The number of lines of code in a function",
+        "The memory address space available to a program",
+      ],
+      correct: 0,
+      explanation: "Big-O captures the shape of growth, not a precise measurement — that's why constants and lower-order terms wash out.",
+    },
+    {
+      question: "Which of these is the fastest-growing (worst) complexity for large n?",
+      options: ["O(log n)", "O(n)", "O(n²)", "O(2ⁿ)"],
+      correct: 3,
+      explanation: "Exponential growth outpaces polynomial growth (like n²) for large enough n, making it the worst of the four listed.",
+    },
+    {
+      question: "A single loop that runs n times, doing O(1) work per iteration, has what time complexity?",
+      options: ["O(1)", "O(n)", "O(n²)", "O(log n)"],
+      correct: 1,
+      explanation: "n iterations × O(1) work each = O(n) total.",
+    },
+    {
+      question: "Two nested loops, each running n times, with O(1) work in the innermost body, give what time complexity?",
+      options: ["O(n)", "O(n log n)", "O(n²)", "O(2n)"],
+      correct: 2,
+      explanation: "The inner loop's cost is multiplied by the outer loop's iteration count: n × n = n².",
+    },
+    {
+      question: "A loop where the range is halved each iteration (e.g. binary search) has what time complexity?",
+      options: ["O(n)", "O(log n)", "O(n log n)", "O(1)"],
+      correct: 1,
+      explanation: "Halving the remaining range each step means the number of iterations needed is log₂(n).",
+    },
+    {
+      question: "Auxiliary space complexity refers to...",
+      options: [
+        "Extra memory used by the algorithm beyond the input itself",
+        "The total memory including the input",
+        "The number of variables declared in the source code",
+        "The size of the output only",
+      ],
+      correct: 0,
+      explanation: "Auxiliary space isolates what the algorithm itself allocates on top of the input, which is what 'in-place' (O(1) space) refers to.",
+    },
+    {
+      question: "A recursive function that recurses to depth n, one call at a time with no branching, uses how much space for the call stack?",
+      options: ["O(n)", "O(1)", "O(log n)", "O(n²)"],
+      correct: 0,
+      explanation: "Each active call keeps a stack frame alive until it returns, so n nested calls means n frames alive at once.",
+    },
+    {
+      question: "A function with two separate, sequential loops, each running n times, has an overall time complexity of...",
+      options: [
+        "O(n), since O(n) + O(n) = O(2n), which simplifies to O(n) after dropping the constant",
+        "O(n²), since the two loops multiply",
+        "O(2ⁿ)",
+        "O(log n)",
+      ],
+      correct: 0,
+      explanation: "Sequential costs add rather than multiply — only nested loops multiply.",
+    },
+  ];
+
+  initQuiz({
+    containerId: "quiz-container",
+    questions: QUIZ,
+    topicId: "dsa",
+    patternId: "complexity",
+  });
+
+  document.addEventListener("quiz-complete", (e) => {
+    if (e.detail.topicId === "dsa") renderSidebar("complexity");
+  });
+});
+</script>
+</body>
+</html>

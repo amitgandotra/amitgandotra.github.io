@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sliding Window — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "sliding-window",
+  summary: "A window [left, right] expands and contracts over a contiguous subarray or substring, updating state incrementally instead of recomputing it. Turns O(n^2) or O(n^3) brute force into O(n).",
+  recognize: [
+    "Problem language mentions a 'contiguous subarray' or 'substring'",
+    "Need the max/min/count over windows satisfying some condition",
+    "Fixed-size window ('subarray of size k') vs variable-size ('longest/shortest satisfying...')",
+    "A running sum/count/frequency can be updated incrementally as the window slides",
+  ],
+  template: {
+    note: "The general variable-size shrinking window: expand right always, shrink left only while the window is invalid.",
+    code: `def longest_valid_window(s, is_valid):
+    window = {}
+    left = 0
+    best = 0
+    for right, ch in enumerate(s):
+        window[ch] = window.get(ch, 0) + 1
+        while not is_valid(window):
+            window[s[left]] -= 1
+            if window[s[left]] == 0:
+                del window[s[left]]
+            left += 1
+        best = max(best, right - left + 1)
+    return best`,
+  },
+  examples: [
+    {
+      title: "Longest Substring Without Repeating Characters",
+      prompt: "Given a string, find the length of the longest substring without repeating characters.",
+      code: `def length_of_longest_substring(s):
+    seen = set()
+    left = 0
+    best = 0
+    for right, ch in enumerate(s):
+        while ch in seen:
+            seen.remove(s[left])
+            left += 1
+        seen.add(ch)
+        best = max(best, right - left + 1)
+    return best`,
+      explanation: "Expand right one character at a time. Whenever the incoming character is already in the window, shrink from the left until it's gone. Every character enters and leaves the set at most once.",
+      complexity: "Time: O(n) · Space: O(min(n, charset size))",
+      complexityWhy: "The right pointer advances n times total, and the left pointer also advances at most n times total across the whole run (it never moves backward), so combined pointer movement is bounded by 2n, giving O(n). The set holds at most one entry per distinct character in the window, bounded by the size of the character set or n, whichever is smaller.",
+    },
+    {
+      title: "Minimum Window Substring",
+      prompt: "Given strings s and t, return the minimum window in s that contains every character of t (with multiplicity).",
+      code: `from collections import Counter
+
+def min_window(s, t):
+    if not t:
+        return ""
+    need = Counter(t)
+    missing = len(t)
+    left = 0
+    best_left, best_len = 0, float("inf")
+
+    for right, ch in enumerate(s):
+        if need[ch] > 0:
+            missing -= 1
+        need[ch] -= 1
+
+        while missing == 0:
+            if right - left + 1 < best_len:
+                best_left, best_len = left, right - left + 1
+            need[s[left]] += 1
+            if need[s[left]] > 0:
+                missing += 1
+            left += 1
+
+    return "" if best_len == float("inf") else s[best_left:best_left + best_len]`,
+      explanation: "Track how many of t's required character-counts are still unmet. Expand right until nothing is missing (window is valid), then greedily shrink from the left to find the tightest valid window before continuing to expand.",
+      complexity: "Time: O(n + m) · Space: O(charset size)",
+      complexityWhy: "Building the need counter costs O(m) for t's length. The main scan advances right n times and left at most n times total, since left never resets backward, giving O(n) for the sweep. Combined that's O(n + m). The need map's size is bounded by the number of distinct characters in t, independent of n.",
+    },
+  ],
+  practiceProblems: [
+    "Best Time to Buy and Sell Stock",
+    "Longest Substring Without Repeating Characters",
+    "Longest Repeating Character Replacement",
+    "Permutation in String",
+    "Minimum Window Substring",
+    "Sliding Window Maximum",
+  ],
+  quiz: [
+    {
+      question: "Sliding window is best suited for...",
+      options: [
+        "Problems about contiguous subarrays/substrings with a max/min/count condition",
+        "Any array problem in general",
+        "Graph traversal",
+        "Sorting a list",
+      ],
+      correct: 0,
+      explanation: "The pattern's whole value is exploiting contiguity to update state incrementally rather than recompute it.",
+    },
+    {
+      question: "What's the key efficiency gain of sliding window over brute force?",
+      options: [
+        "Each element is added and removed from the window at most once, giving O(n) instead of O(n^2)",
+        "It always uses less memory than any alternative",
+        "It avoids recursion entirely",
+        "It sorts the array first",
+      ],
+      correct: 0,
+      explanation: "Left and right pointers each traverse the array once, so total work across the whole run is linear.",
+    },
+    {
+      question: "What's the core difference between fixed-size and variable-size windows?",
+      options: [
+        "Fixed-size windows slide by exactly one each step; variable-size windows grow/shrink based on a validity condition",
+        "There is no real difference between them",
+        "Fixed-size always uses two pointers moving in opposite directions",
+        "Variable-size windows are always O(n^2)",
+      ],
+      correct: 0,
+      explanation: "Fixed-size windows maintain a constant width k; variable-size windows expand and contract dynamically based on whether the current window satisfies a condition.",
+    },
+    {
+      question: "In Minimum Window Substring, what does the 'missing' counter represent?",
+      options: [
+        "The total number of characters in t",
+        "How many of t's required character-counts are not yet satisfied by the current window",
+        "The current length of the window",
+        "The number of duplicate characters in s",
+      ],
+      correct: 1,
+      explanation: "It hits zero exactly when the window contains at least as many of each required character as t needs.",
+    },
+    {
+      question: "If you find yourself recomputing a window's sum or count from scratch on every step, what should you do instead?",
+      options: [
+        "Update the running sum/count incrementally as the window slides",
+        "Nothing — recomputation is required",
+        "Switch to binary search",
+        "Add recursion",
+      ],
+      correct: 0,
+      explanation: "Recomputing from scratch each step is exactly the O(n^2) brute force sliding window is meant to eliminate.",
+    },
+  ],
+};
+</script>
+<script src="../../js/pattern-page.js"></script>
+</body>
+</html>

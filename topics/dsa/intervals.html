@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Intervals — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "intervals",
+  summary: "Sort intervals by start (or end) time, then sweep once to merge or detect overlap. The vast majority of interval problems reduce to 'sort, then a single greedy pass.'",
+  recognize: [
+    "Problem gives a list of [start, end] pairs",
+    "Need to merge overlapping intervals, find free time, or detect conflicts",
+    "Meeting room / scheduling style problems",
+    "Sorting by start or end time unlocks a linear sweep",
+  ],
+  template: {
+    note: "The base merge-intervals sweep.",
+    code: `def merge_intervals(intervals):
+    intervals.sort(key=lambda x: x[0])
+    merged = [intervals[0]]
+    for start, end in intervals[1:]:
+        last_end = merged[-1][1]
+        if start <= last_end:
+            merged[-1][1] = max(last_end, end)
+        else:
+            merged.append([start, end])
+    return merged`,
+  },
+  examples: [
+    {
+      title: "Insert Interval",
+      prompt: "Given a set of non-overlapping intervals sorted by start time, insert a new interval into the list, merging if necessary.",
+      code: `def insert(intervals, new_interval):
+    result = []
+    i, n = 0, len(intervals)
+
+    while i < n and intervals[i][1] < new_interval[0]:
+        result.append(intervals[i])
+        i += 1
+
+    while i < n and intervals[i][0] <= new_interval[1]:
+        new_interval[0] = min(new_interval[0], intervals[i][0])
+        new_interval[1] = max(new_interval[1], intervals[i][1])
+        i += 1
+    result.append(new_interval)
+
+    while i < n:
+        result.append(intervals[i])
+        i += 1
+
+    return result`,
+      explanation: "Three phases in one linear pass: copy intervals ending before the new one starts, merge every interval that overlaps the new one by expanding its bounds, then copy whatever remains untouched.",
+      complexity: "Time: O(n), input already sorted · Space: O(n) for output",
+      complexityWhy: "The input is already sorted, so a single linear scan through all n intervals — split into three phases (before, overlapping, after) — is enough; no additional sort is needed. The output list holds at most n+1 intervals, giving O(n) space.",
+    },
+    {
+      title: "Meeting Rooms II",
+      prompt: "Given an array of meeting time intervals, return the minimum number of conference rooms required.",
+      code: `import heapq
+
+def min_meeting_rooms(intervals):
+    intervals.sort(key=lambda x: x[0])
+    heap = []  # end times of ongoing meetings
+    for start, end in intervals:
+        if heap and heap[0] <= start:
+            heapq.heapreplace(heap, end)
+        else:
+            heapq.heappush(heap, end)
+    return len(heap)`,
+      explanation: "Sort by start time. The heap tracks end times of rooms currently in use. If the earliest-ending room has already freed up by the current meeting's start, reuse that room (replace its end time); otherwise open a new room (push). The final heap size is the number of rooms needed at peak.",
+      complexity: "Time: O(n log n) · Space: O(n)",
+      complexityWhy: "Sorting the n intervals by start time costs O(n log n), which dominates the subsequent scan (each of the n meetings triggers one O(log k) heap push or replace, where k <= n). The heap holds at most one end-time per room in use, bounded by n in the worst case.",
+    },
+  ],
+  practiceProblems: [
+    "Insert Interval",
+    "Merge Intervals",
+    "Non-overlapping Intervals",
+    "Meeting Rooms",
+    "Meeting Rooms II",
+    "Minimum Interval to Include Each Query",
+  ],
+  quiz: [
+    {
+      question: "The near-universal first step for interval problems is...",
+      options: [
+        "Sort by start time (or sometimes end time)",
+        "Build a hashmap of intervals",
+        "Build a trie",
+        "Binary search the intervals directly",
+      ],
+      correct: 0,
+      explanation: "Sorting turns an otherwise O(n^2) overlap check into a single O(n) linear sweep.",
+    },
+    {
+      question: "Two intervals [a, b] and [c, d], sorted so a <= c, overlap when...",
+      options: ["c <= b", "c > b", "Only when a equals c", "Sorted intervals never overlap"],
+      correct: 0,
+      explanation: "If the second interval's start is at or before the first interval's end, they share at least one point.",
+    },
+    {
+      question: "In Meeting Rooms II, what does the heap store?",
+      options: [
+        "The end times of meetings currently occupying a room",
+        "The start times of all meetings",
+        "Room numbers only",
+        "Nothing — a heap isn't actually needed",
+      ],
+      correct: 0,
+      explanation: "The heap's root is always the soonest-freeing room, which is exactly what you need to check before opening a new one.",
+    },
+    {
+      question: "Why sort by start time specifically in Meeting Rooms II?",
+      options: [
+        "So meetings are processed in the order they begin, letting you check whether an existing room has freed up by then",
+        "Sorting by end time would work identically here",
+        "Sorting isn't necessary for this problem",
+        "You must sort by meeting duration instead",
+      ],
+      correct: 0,
+      explanation: "Processing meetings in start order is what lets the greedy room-reuse check make sense at each step.",
+    },
+    {
+      question: "What's the overall time complexity of the merge-intervals pattern given n unsorted intervals?",
+      options: ["O(n log n), dominated by the sort", "O(n)", "O(n^2)", "O(log n)"],
+      correct: 0,
+      explanation: "The sweep itself is O(n), but sorting the intervals first costs O(n log n) and dominates.",
+    },
+  ],
+};
+</script>
+<script src="../../js/pattern-page.js"></script>
+</body>
+</html>

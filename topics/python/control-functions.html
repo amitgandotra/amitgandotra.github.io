@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Control Flow & Functions — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "control-functions",
+  summary: "Python's control flow trades Java's C-style for loop and switch statement for for...in iteration and, since 3.10, structural pattern matching. Functions trade method overloading for default arguments and *args/**kwargs, with optional type hints bridging back toward Java-like signatures.",
+  keyDifferences: [
+    "Java: <code>for (int i = 0; i < n; i++)</code>. Python: <code>for i in range(n):</code> — range() generates the sequence, no manual counter.",
+    "Java: <code>for (String s : list)</code> is the for-each form. Python: <code>for s in list:</code> is the ONLY for-loop form — there's no C-style counter loop without range().",
+    "Java: ternary is <code>cond ? a : b</code>. Python: <code>a if cond else b</code> — the condition sits in the middle.",
+    "Java: switch statement/expression matches on a value. Python 3.10+: <code>match</code> does structural pattern matching — shapes, not just values.",
+    "Java: method overloading — multiple methods, same name, different signatures. Python: no overloading — one function per name; use default arguments or *args/**kwargs for flexible signatures instead.",
+    "Java: optional parameters require overloads. Python: <code>def greet(name, greeting=\"Hello\"):</code> — default values live directly in the signature.",
+  ],
+  template: {
+    note: "Default arguments, keyword-only arguments, and the *args/**kwargs escape hatches.",
+    code: `def greet(name, greeting="Hello", *, loud=False):
+    # the bare * forces everything after it to be passed by keyword only
+    msg = f"{greeting}, {name}!"
+    return msg.upper() if loud else msg
+
+print(greet("Ada"))                # "Hello, Ada!"
+print(greet("Ada", loud=True))       # "HELLO, ADA!"
+
+def total(*args, **kwargs):
+    print(args)       # tuple of positional args
+    print(kwargs)       # dict of keyword args
+
+total(1, 2, 3, x=10, y=20)`,
+  },
+  examples: [
+    {
+      title: "range, ternary, and match",
+      prompt: "The three most common control-flow substitutions coming from Java.",
+      code: `for i in range(5):           # 0,1,2,3,4 -- like for(int i=0; i<5; i++)
+    print(i)
+
+status = 200
+label = "ok" if status == 200 else "error"    # ternary, condition in the middle
+
+match status:                                    # Python 3.10+ structural match
+    case 200:
+        print("OK")
+    case 404 | 500:
+        print("problem")
+    case _:
+        print("unknown")`,
+      explanation: "range(5) produces 0 through 4, filling the role of Java's counter loop without a manual index variable. Python's ternary reads 'value if condition else other value' rather than Java's 'condition ? value : other'. match (3.10+) can do far more than switch — matching multiple values with |, unpacking structures, and guards — but a simple case behaves like a switch statement.",
+      output: "OK",
+    },
+    {
+      title: "No overloading — defaults and *args instead",
+      prompt: "Replicate what Java would need three overloaded methods for, using one Python function.",
+      code: `# Java would need: sum(int,int), sum(int,int,int), sum(List<Integer>)
+def total(*numbers):
+    return sum(numbers)
+
+print(total(1, 2))             # 3
+print(total(1, 2, 3))            # 6
+print(total(*[1, 2, 3, 4]))        # 10 -- unpack a list into positional args`,
+      explanation: "Python has no method overloading — defining two functions with the same name simply replaces the first with the second. Instead, one function accepts a variable number of arguments via *numbers, collecting any number of positional arguments into a tuple. The * prefix also works in reverse at the call site, unpacking an existing list into individual arguments.",
+      output: "3 / 6 / 10",
+    },
+  ],
+  gotchas: [
+    "Trying to write a C-style counting for-loop without range() — Python's for loop is for-each only.",
+    "Assuming a mutable default argument is re-created each call — <code>def f(x, cache=[]):</code> reuses the SAME list object across every call, a classic and infamous Python bug.",
+    "Defining two functions with the same name expecting Java-style overloading — the second silently replaces the first.",
+  ],
+  practiceExercises: [
+    "Rewrite a Java-style counting for-loop using range()",
+    "Write a function using *args that sums any number of arguments",
+    "Reproduce the mutable default argument bug, then fix it with cache=None and `cache = cache or []` inside the function",
+  ],
+  quiz: [
+    {
+      question: "What does `range(5)` produce?",
+      options: ["0, 1, 2, 3, 4 — five values, stopping before 5", "1 through 5", "0 through 5 inclusive", "An infinite sequence"],
+      correct: 0,
+      explanation: "range(n) generates n values starting at 0 by default, stopping just before n — a half-open range.",
+    },
+    {
+      question: "How do you write a ternary expression in Python?",
+      options: [
+        "value_if_true if condition else value_if_false",
+        "condition ? value_if_true : value_if_false",
+        "if condition then value_if_true else value_if_false",
+        "switch(condition)",
+      ],
+      correct: 0,
+      explanation: "Python has no ?: operator — the conditional expression reads left-to-right with if/else in the middle.",
+    },
+    {
+      question: "How does Python handle what Java solves with method overloading?",
+      options: [
+        "It doesn't support overloading — use default arguments or *args/**kwargs on a single function instead",
+        "Python supports full method overloading identical to Java",
+        "Only constructors can be overloaded",
+        "Overloading works but only for two parameters",
+      ],
+      correct: 0,
+      explanation: "Functions are just names bound to one callable object at a time; a later `def` with the same name replaces the earlier one entirely.",
+    },
+    {
+      question: "What does `*args` collect inside a function definition?",
+      options: [
+        "A tuple of all extra positional arguments passed to the function",
+        "A dict of keyword arguments",
+        "A single required argument",
+        "Nothing — it's a syntax error",
+      ],
+      correct: 0,
+      explanation: "*args gathers any number of positional arguments beyond the named parameters into a tuple; **kwargs does the same for keyword arguments into a dict.",
+    },
+    {
+      question: "What's dangerous about `def f(x, cache=[]):`?",
+      options: [
+        "The default list is created once and shared across every call, silently accumulating state across unrelated calls",
+        "Nothing — it's perfectly safe",
+        "It raises a TypeError at definition time",
+        "cache must always be passed explicitly",
+      ],
+      correct: 0,
+      explanation: "Default argument values are evaluated once, at function definition time, not on every call — so a mutable default persists and accumulates state across calls.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>

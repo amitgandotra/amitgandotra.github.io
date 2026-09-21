@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>2-D Dynamic Programming — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "dp-2d",
+  summary: "State depends on two indices — two positions in a string, a grid cell, or an item index plus remaining capacity. Same overlapping-subproblems idea as 1-D DP, but the table is a 2D grid.",
+  recognize: [
+    "Two strings being compared (edit distance, longest common subsequence)",
+    "Grid path problems (unique paths, minimum path sum)",
+    "Knapsack-style problems: item index + remaining capacity",
+    "dp[i][j] depends on dp[i-1][j], dp[i][j-1], and/or dp[i-1][j-1]",
+  ],
+  template: {
+    note: "The classic grid-path DP shape.",
+    code: `def min_path_sum(grid):
+    rows, cols = len(grid), len(grid[0])
+    dp = [[0] * cols for _ in range(rows)]
+    for r in range(rows):
+        for c in range(cols):
+            if r == 0 and c == 0:
+                dp[r][c] = grid[r][c]
+            elif r == 0:
+                dp[r][c] = dp[r][c - 1] + grid[r][c]
+            elif c == 0:
+                dp[r][c] = dp[r - 1][c] + grid[r][c]
+            else:
+                dp[r][c] = min(dp[r - 1][c], dp[r][c - 1]) + grid[r][c]
+    return dp[rows - 1][cols - 1]`,
+  },
+  examples: [
+    {
+      title: "Longest Common Subsequence",
+      prompt: "Given two strings text1 and text2, return the length of their longest common subsequence.",
+      code: `def longest_common_subsequence(text1, text2):
+    m, n = len(text1), len(text2)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if text1[i - 1] == text2[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1] + 1
+            else:
+                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+    return dp[m][n]`,
+      explanation: "dp[i][j] is the LCS length of text1[:i] and text2[:j]. A matching character extends the diagonal's LCS by one; a mismatch carries forward the best result from dropping one character off either string.",
+      complexity: "Time: O(m * n) · Space: O(m * n), reducible to O(min(m, n))",
+      complexityWhy: "Every cell (i, j) of the m x n table is filled exactly once with O(1) work, giving O(m * n) time. The table itself has (m+1) * (n+1) cells, giving O(m * n) space (reducible to O(min(m, n)) by only keeping the previous row alive).",
+    },
+    {
+      title: "Edit Distance",
+      prompt: "Given two words, find the minimum number of operations (insert, delete, replace) to convert word1 into word2.",
+      code: `def min_distance(word1, word2):
+    m, n = len(word1), len(word2)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    for i in range(m + 1):
+        dp[i][0] = i
+    for j in range(n + 1):
+        dp[0][j] = j
+
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if word1[i - 1] == word2[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1]
+            else:
+                dp[i][j] = 1 + min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+    return dp[m][n]`,
+      explanation: "The base row/column represent converting a string to or from empty (i or j operations). Otherwise take the cheapest of delete, insert, or replace, each expressed as one step from an already-solved smaller subproblem.",
+      complexity: "Time: O(m * n) · Space: O(m * n)",
+      complexityWhy: "Same structure as LCS: the (m+1) x (n+1) table is filled cell by cell with O(1) work per cell (one comparison and a min of three lookups), giving O(m * n) time and space.",
+    },
+  ],
+  practiceProblems: [
+    "Unique Paths",
+    "Longest Common Subsequence",
+    "Edit Distance",
+    "Longest Palindromic Substring",
+    "0/1 Knapsack",
+    "Interleaving String",
+  ],
+  quiz: [
+    {
+      question: "2-D DP problems typically involve state indexed by...",
+      options: [
+        "Two variables, like two string positions or a grid cell",
+        "A single position only",
+        "No index at all",
+        "A hashmap key only",
+      ],
+      correct: 0,
+      explanation: "That's exactly the feature that distinguishes 2-D DP from 1-D DP — two independent dimensions of state.",
+    },
+    {
+      question: "In Longest Common Subsequence, what does dp[i][j] represent?",
+      options: [
+        "The LCS length between text1[:i] and text2[:j]",
+        "The total combined length of text1 and text2",
+        "Whether text1 equals text2",
+        "The edit distance between the strings",
+      ],
+      correct: 0,
+      explanation: "Each cell holds the answer for the corresponding prefixes of both strings, building up to the full answer at dp[m][n].",
+    },
+    {
+      question: "In Edit Distance, why is dp[i][0] initialized to i?",
+      options: [
+        "Converting a string of length i to an empty string requires exactly i deletions",
+        "It's an arbitrary starting value",
+        "Because i is always 0 in this problem",
+        "To match array indexing conventions only",
+      ],
+      correct: 0,
+      explanation: "That row/column encodes the base case: transforming any prefix to/from the empty string costs exactly its length in operations.",
+    },
+    {
+      question: "What's the typical space complexity of a straightforward 2-D DP solution over sequences of length m and n?",
+      options: ["O(m * n)", "O(m + n)", "O(1)", "O(log(m * n))"],
+      correct: 0,
+      explanation: "A full 2D table with m+1 rows and n+1 columns is the naive (though often sufficient) space usage.",
+    },
+    {
+      question: "How can many 2-D DP solutions be optimized in space, when dp[i][j] only depends on the previous row?",
+      options: [
+        "Roll the table down to O(min(m,n)) or O(n) by keeping only the previous row/column",
+        "They can never be optimized below O(m*n)",
+        "By switching to BFS instead",
+        "By removing the DP table and using plain recursion instead",
+      ],
+      correct: 0,
+      explanation: "If each row only needs the row above it, you never need to keep more than two rows (or even one, updated in place) alive at once.",
+    },
+  ],
+};
+</script>
+<script src="../../js/pattern-page.js"></script>
+</body>
+</html>

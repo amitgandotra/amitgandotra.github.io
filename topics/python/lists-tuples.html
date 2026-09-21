@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lists & Tuples — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "lists-tuples",
+  summary: "Python's list is Java's ArrayList with a far friendlier API baked directly into the language. tuple has no direct Java equivalent — it's an immutable, fixed-size sequence used constantly for multiple return values and as dict keys.",
+  keyDifferences: [
+    "Java: <code>ArrayList&lt;Integer&gt; nums = new ArrayList&lt;&gt;();</code> requires a type parameter and boxing. Python: <code>nums = [1, 2, 3]</code> — a list literal, no type declared, can even hold mixed types.",
+    "Java: arrays (<code>int[]</code>) and List are separate concepts with different syntax. Python: list is the one general-purpose sequence type used everywhere.",
+    "Java: returning multiple values requires a wrapper class or an array. Python: <code>return a, b</code> returns a tuple — unpack directly at the call site.",
+    "Java: List methods are <code>.add()</code>, <code>.get(i)</code>, <code>.remove(i)</code>. Python: <code>.append()</code>, indexing with <code>[i]</code>, and <code>.remove(value)</code> — by value, not index (<code>del list[i]</code> removes by index).",
+    "Java: <code>Collections.unmodifiableList()</code> gives an immutable view of a list. Python: tuple is immutable by construction — <code>(1, 2, 3)</code>, a genuinely different type, not a wrapped list.",
+  ],
+  template: {
+    note: "The list methods you'll reach for constantly.",
+    code: `nums = [3, 1, 4, 1, 5]
+nums.append(9)             # add to end
+nums.insert(0, 0)           # insert at index
+nums.pop()                    # remove & return last element
+nums.sort()                    # in-place sort
+sorted_copy = sorted(nums)      # new sorted list, original untouched`,
+  },
+  examples: [
+    {
+      title: "Tuples for multiple returns and unpacking",
+      prompt: "Return more than one value from a function without a wrapper class.",
+      code: `def min_max(nums):
+    return min(nums), max(nums)   # packs into a tuple automatically
+
+lo, hi = min_max([3, 1, 4, 1, 5])   # unpacked directly into two variables
+print(lo, hi)`,
+      explanation: "In Java, this would require a small record/wrapper class (or returning an int[]) just to carry two values out of a method. Python's tuple makes 'return several values' a zero-ceremony, first-class pattern — the function packs them, the caller unpacks them by position.",
+      output: "1 5",
+    },
+    {
+      title: "Slicing, and the shared-reference gotcha",
+      prompt: "List slicing beyond substrings, plus a classic bug when multiplying a list of mutable elements.",
+      code: `nums = [1, 2, 3, 4, 5]
+print(nums[1:3])      # [2, 3]
+print(nums[:2])         # [1, 2]
+print(nums[::2])         # [1, 3, 5] -- every other element
+
+# the classic gotcha: multiplying a list of lists shares ONE inner list
+grid = [[0] * 3] * 3       # WRONG -- all 3 rows are the same object
+grid[0][0] = 1
+print(grid)                    # [[1,0,0], [1,0,0], [1,0,0]] -- every row changed!
+
+grid = [[0] * 3 for _ in range(3)]   # correct -- a fresh list each iteration`,
+      explanation: "<code>[[0]*3] * 3</code> creates one inner list, then repeats the <em>reference</em> to it three times — the same b = a mutability trap from the syntax page. Mutating one row mutates all of them since they're literally the same object. The list comprehension version calls <code>[0]*3</code> fresh on every iteration, producing three independent lists.",
+      output: "[[1, 0, 0], [1, 0, 0], [1, 0, 0]]  (the buggy version)",
+    },
+  ],
+  gotchas: [
+    "<code>list * n</code> for a list of mutable elements repeats references, not copies — the classic <code>[[0]*3]*3</code> bug.",
+    "<code>.remove(value)</code> removes by value, not index — use <code>del list[i]</code> or <code>list.pop(i)</code> for index-based removal.",
+    "A one-element tuple needs a trailing comma: <code>(1,)</code>, not <code>(1)</code> — the latter is just the int 1 in parentheses.",
+  ],
+  practiceExercises: [
+    "Write a function returning both the min and max of a list as a tuple, then unpack the result",
+    "Reproduce the shared-reference grid bug, then fix it with a list comprehension",
+    "Create a one-element tuple without the trailing comma and check what type() reports",
+  ],
+  quiz: [
+    {
+      question: "What's the closest Java equivalent to Python's list?",
+      options: [
+        "ArrayList, but with a friendlier built-in syntax and no type parameter required",
+        "int[] arrays only",
+        "LinkedList exclusively",
+        "HashMap",
+      ],
+      correct: 0,
+      explanation: "Python's list is a dynamic, general-purpose sequence — functionally closest to ArrayList, just with literal syntax and dynamic typing built in.",
+    },
+    {
+      question: "What does Python's tuple correspond to in Java?",
+      options: [
+        "Nothing built-in directly — the closest analog is a small record/wrapper class used for multiple return values",
+        "ArrayList",
+        "A regular array",
+        "HashSet",
+      ],
+      correct: 0,
+      explanation: "Java has no lightweight built-in fixed tuple type; developers typically reach for a record or small class to achieve the same effect.",
+    },
+    {
+      question: "What does `grid = [[0]*3]*3` actually create?",
+      options: [
+        "Three references to the SAME inner list, so mutating one row mutates all of them",
+        "Three independent 3-element lists",
+        "A 3x3 list of unique zero objects",
+        "A syntax error",
+      ],
+      correct: 0,
+      explanation: "The outer `* 3` repeats the object reference to the single inner list three times rather than creating three separate lists.",
+    },
+    {
+      question: "How do you remove an element from a list by its index rather than its value?",
+      options: ["del list[i] or list.pop(i)", "list.remove(i)", "list.delete(i)", "list[i] = None"],
+      correct: 0,
+      explanation: ".remove() searches for and removes a matching value, not a position — del and pop() are the index-based tools.",
+    },
+    {
+      question: "How do you write a tuple containing a single element?",
+      options: [
+        "(1,) — a trailing comma is required to distinguish it from parentheses around an expression",
+        "(1)",
+        "[1]",
+        "tuple(1)",
+      ],
+      correct: 0,
+      explanation: "Without the comma, (1) is just the integer 1 wrapped in parentheses, not a tuple at all.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>

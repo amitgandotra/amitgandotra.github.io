@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stack — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "stack",
+  summary: "A stack is a LIFO structure for matching and nesting problems — parentheses validation, monotonic sequences, expression evaluation. Whenever you need to remember the most recent unmatched thing, reach for a stack.",
+  recognize: [
+    "Matching pairs: parentheses, brackets, tags",
+    "'Next greater/smaller element' style problems &rarr; monotonic stack",
+    "Need to undo or backtrack the most recent operation",
+    "Evaluating expressions: postfix notation, calculator-style problems",
+  ],
+  template: {
+    note: "The monotonic stack template — keeps values decreasing bottom to top, popping whenever the pattern breaks.",
+    code: `def next_greater_elements(nums):
+    result = [-1] * len(nums)
+    stack = []  # indices, values decreasing bottom to top
+    for i, n in enumerate(nums):
+        while stack and nums[stack[-1]] < n:
+            result[stack.pop()] = n
+        stack.append(i)
+    return result`,
+  },
+  examples: [
+    {
+      title: "Valid Parentheses",
+      prompt: "Given a string containing just '(', ')', '{', '}', '[' and ']', determine if the input string is valid.",
+      code: `def is_valid(s):
+    pairs = {')': '(', ']': '[', '}': '{'}
+    stack = []
+    for ch in s:
+        if ch in pairs:
+            if not stack or stack.pop() != pairs[ch]:
+                return False
+        else:
+            stack.append(ch)
+    return not stack`,
+      explanation: "Push opening brackets. On a closing bracket, pop and check it matches the corresponding opener. If the stack is empty when a closer arrives, or openers are left over at the end, the string is invalid.",
+      complexity: "Time: O(n) · Space: O(n)",
+      complexityWhy: "Each character is examined exactly once, and every stack push/pop is O(1), giving O(n) total time. In the worst case (e.g. a string of all opening brackets) every character sits on the stack simultaneously, which is the O(n) space bound.",
+    },
+    {
+      title: "Daily Temperatures",
+      prompt: "Given daily temperatures, return a list where answer[i] is the number of days until a warmer temperature (0 if none).",
+      code: `def daily_temperatures(temps):
+    result = [0] * len(temps)
+    stack = []  # indices with decreasing temps
+    for i, t in enumerate(temps):
+        while stack and temps[stack[-1]] < t:
+            j = stack.pop()
+            result[j] = i - j
+        stack.append(i)
+    return result`,
+      explanation: "Maintain a monotonic decreasing stack of indices. When the current temperature beats the top of the stack, that day just found its warmer day — pop it and record the distance.",
+      complexity: "Time: O(n), each index pushed and popped once · Space: O(n)",
+      complexityWhy: "Although there's a nested while loop, each index is pushed onto the stack exactly once and popped at most once across the entire run — that amortized accounting is what keeps total work at O(n) rather than O(n^2). The stack can hold up to n indices in the worst case (strictly decreasing temperatures), giving O(n) space.",
+    },
+  ],
+  practiceProblems: [
+    "Valid Parentheses",
+    "Min Stack",
+    "Evaluate Reverse Polish Notation",
+    "Daily Temperatures",
+    "Generate Parentheses",
+    "Largest Rectangle in Histogram",
+  ],
+  quiz: [
+    {
+      question: "What does LIFO stand for, and why does it suit bracket matching?",
+      options: [
+        "Last In First Out — matches the most recently opened bracket first",
+        "First In First Out",
+        "Least Index First Out",
+        "Longest In First Out",
+      ],
+      correct: 0,
+      explanation: "A closing bracket must match the most recently opened one — exactly the last item pushed.",
+    },
+    {
+      question: "A 'monotonic stack' is typically used to find...",
+      options: [
+        "The kth largest element",
+        "Next greater/smaller element efficiently",
+        "Shortest path in a graph",
+        "A random element in O(1)",
+      ],
+      correct: 1,
+      explanation: "Maintaining a monotonic order lets you pop exactly when a 'next greater/smaller' relationship is found.",
+    },
+    {
+      question: "In Valid Parentheses, when should you return False immediately?",
+      options: [
+        "Whenever you see a closing bracket",
+        "When the stack is empty on a closing bracket, or the popped element doesn't match",
+        "Only when the string length is odd",
+        "Never — just check at the very end",
+      ],
+      correct: 1,
+      explanation: "Those are the two ways a closer can fail to match a valid opener.",
+    },
+    {
+      question: "Across the whole array, what's the total work done by the monotonic stack in Daily Temperatures?",
+      options: ["O(n^2)", "O(n log n)", "O(n), since each index is pushed and popped at most once", "O(2^n)"],
+      correct: 2,
+      explanation: "Even though there's a nested while loop, each index enters and leaves the stack exactly once across the whole run, giving amortized O(n).",
+    },
+    {
+      question: "Which of these is NOT a typical stack use case?",
+      options: [
+        "Undo/redo functionality",
+        "Function call stack / recursion tracking",
+        "Finding the median of a running stream",
+        "Evaluating postfix expressions",
+      ],
+      correct: 2,
+      explanation: "A running median needs an order-statistics structure like two heaps, not a stack.",
+    },
+  ],
+};
+</script>
+<script src="../../js/pattern-page.js"></script>
+</body>
+</html>
