@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OOP in Python — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "oop",
+  summary: "Python classes cover the same ground as Java's — encapsulation, inheritance, polymorphism — but with far less enforcement by the language: no access modifiers, no interfaces (duck typing / ABCs instead), and behavior customized via dunder methods instead of overriding well-known base-class methods.",
+  keyDifferences: [
+    "Java: private, protected, public are enforced by the compiler. Python: no enforced access control — a single leading underscore (<code>_name</code>) signals 'internal, don't touch' by convention only; double underscore (<code>__name</code>) triggers name-mangling, a weaker form of privacy, not true protection.",
+    "Java: <code>this</code> is implicit inside instance methods. Python: <code>self</code> is the explicit first parameter of every instance method, written every time.",
+    "Java: constructors are named after the class. Python: <code>__init__</code> is the initializer (technically <code>__new__</code> is the true constructor, rarely touched directly).",
+    "Java: interfaces declare a contract, implemented explicitly with <code>implements</code>. Python: duck typing — if an object has the right methods, it works, no declared interface required; <code>abc.ABC</code> exists for when you do want an enforced contract.",
+    "Java: single inheritance for classes. Python: multiple inheritance is directly supported, resolved via C3 linearization (the Method Resolution Order).",
+    "Java: <code>toString()</code>, <code>equals()</code>, <code>hashCode()</code> are methods you override. Python: <code>__str__</code>, <code>__eq__</code>, <code>__hash__</code> are 'dunder' methods — same idea, and there are many more (<code>__len__</code>, <code>__iter__</code>, <code>__add__</code>) that hook into built-in syntax.",
+  ],
+  template: {
+    note: "A basic class — attributes assigned in __init__, no field declarations needed.",
+    code: `class Employee:
+    def __init__(self, name, salary):
+        self.name = name           # instance attributes -- no field declarations needed
+        self.salary = salary
+
+    def raise_salary(self, pct):
+        self.salary *= (1 + pct / 100)
+
+    def __str__(self):              # like Java's toString()
+        return f"{self.name}: \${self.salary:.2f}"
+
+e = Employee("Ada", 90000)
+e.raise_salary(10)
+print(e)           # calls __str__ automatically`,
+  },
+  examples: [
+    {
+      title: "Dunder methods hook into built-in syntax",
+      prompt: "Make a custom class work with len(), ==, and print() the way built-in types do.",
+      code: `class Team:
+    def __init__(self, members):
+        self.members = members
+
+    def __len__(self):                      # powers len(team)
+        return len(self.members)
+
+    def __eq__(self, other):                 # powers ==
+        return self.members == other.members
+
+    def __repr__(self):                        # fallback string repr, shown in REPL/collections
+        return f"Team({self.members!r})"
+
+t1 = Team(["Ada", "Alan"])
+t2 = Team(["Ada", "Alan"])
+print(len(t1))        # 2 -- len() calls __len__ automatically
+print(t1 == t2)         # True -- == calls __eq__ automatically, not identity`,
+      explanation: "In Java, you'd override .equals() and add a .size() method, then call them explicitly: t1.equals(t2), t1.size(). Python instead lets a class opt into built-in syntax itself — len(t1) and t1 == t2 work exactly like they do for a list or string, because the class defines the dunder methods those operators and functions delegate to.",
+      output: "2 / True",
+    },
+    {
+      title: "Duck typing instead of interfaces",
+      prompt: "Show that Python doesn't require an explicit interface for polymorphism to work.",
+      code: `class Dog:
+    def speak(self):
+        return "Woof"
+
+class Duck:
+    def speak(self):
+        return "Quack"
+
+def make_it_speak(animal):
+    print(animal.speak())    # no type check, no interface -- just calls .speak()
+
+make_it_speak(Dog())
+make_it_speak(Duck())`,
+      explanation: "In Java, make_it_speak would take an Animal interface parameter, and both Dog and Duck would need `implements Animal`. Python needs neither the interface declaration nor the explicit implements clause — if the object passed in has a .speak() method, the function works, summarized as 'if it walks like a duck and quacks like a duck.' For cases where you DO want an enforced contract, abc.ABC and @abstractmethod give Java-like guarantees.",
+      output: "Woof / Quack",
+    },
+  ],
+  gotchas: [
+    "Forgetting self as the first parameter of every instance method — Python won't infer it the way Java infers this.",
+    "Expecting <code>_name</code> or <code>__name</code> to be truly private — both are accessible from outside the class, just discouraged (single underscore) or name-mangled (double underscore), not enforced.",
+    "Defining <code>__eq__</code> without <code>__hash__</code> makes instances unhashable by default — they can no longer be used in a set or as a dict key.",
+  ],
+  practiceExercises: [
+    "Write a class with __init__, __str__, and __eq__, then test equality between two instances holding the same data",
+    "Write two unrelated classes that both implement a common method, and call it through a single function with no interface declaration",
+    "Look up abc.ABC and rewrite the duck-typing example to enforce the 'must have speak()' contract",
+  ],
+  quiz: [
+    {
+      question: "What Python convention signals 'internal use, don't touch from outside' without true enforcement?",
+      options: ["A single leading underscore, like _name", "The private keyword", "The final keyword", "The protected keyword"],
+      correct: 0,
+      explanation: "Python has no access-modifier keywords at all — underscore prefixes are purely conventional signals, not enforced by the interpreter.",
+    },
+    {
+      question: "What is `self` in a Python instance method?",
+      options: [
+        "The explicit first parameter representing the instance, equivalent to Java's implicit this",
+        "A Python keyword like Java's this, never written explicitly",
+        "Optional, and can be omitted",
+        "Only used in constructors",
+      ],
+      correct: 0,
+      explanation: "Unlike this in Java, self isn't a keyword — it's just the conventional name for the first parameter, which Python passes automatically when you call a method on an instance.",
+    },
+    {
+      question: "How does Python typically achieve polymorphism without Java-style interfaces?",
+      options: [
+        "Duck typing — if an object has the right method, it works, no declared contract required",
+        "It doesn't support polymorphism at all",
+        "Every class must inherit from object explicitly to be polymorphic",
+        "Only through multiple inheritance",
+      ],
+      correct: 0,
+      explanation: "Python resolves method calls dynamically at runtime based on the object's actual attributes, not a declared type contract.",
+    },
+    {
+      question: "What does defining `__len__` on a custom class let you do?",
+      options: [
+        "Call len(instance) on it, just like a built-in list or string",
+        "Nothing — it's purely documentation",
+        "Automatically make the class iterable",
+        "Override the class's memory size",
+      ],
+      correct: 0,
+      explanation: "The built-in len() function delegates to an object's __len__ method whenever one is defined.",
+    },
+    {
+      question: "What happens if you define `__eq__` on a class without also defining `__hash__`?",
+      options: [
+        "The class becomes unhashable by default, so instances can't be used in a set or as dict keys",
+        "Nothing changes",
+        "It raises a SyntaxError immediately",
+        "__hash__ is automatically generated to match",
+      ],
+      correct: 0,
+      explanation: "Python sets __hash__ to None automatically when __eq__ is defined without it, since two 'equal' objects would otherwise be able to hash differently and violate the hash/eq contract.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>

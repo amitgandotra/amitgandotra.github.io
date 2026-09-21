@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Exceptions & EAFP — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "exceptions",
+  summary: "try/except covers the same ground as try/catch, but Python drops checked exceptions entirely and leans on a different philosophy — EAFP (easier to ask forgiveness than permission) over Java's more defensive LBYL (look before you leap) style.",
+  keyDifferences: [
+    "Java: checked exceptions must be declared (throws) or caught — the compiler enforces handling. Python: all exceptions are unchecked — nothing forces you to catch anything, ever.",
+    "Java: try/catch/finally. Python: try/except/else/finally — the extra else clause runs only if no exception occurred, keeping the 'happy path' separate from error handling.",
+    "Java: <code>catch (IOException e)</code> catches one type (or a union with | since Java 7). Python: <code>except (TypeError, ValueError) as e:</code> catches multiple types via a tuple, or stack multiple except blocks.",
+    "Java: idiomatic style is LBYL — check preconditions before acting. Python: idiomatic style is EAFP — just try the operation and catch the exception if it fails, often faster and more readable for the common case.",
+    "Java: custom exceptions extend Exception or RuntimeException, a meaningful choice (checked vs unchecked). Python: custom exceptions subclass Exception — no checked/unchecked distinction to choose between.",
+  ],
+  template: {
+    note: "The full try/except/else/finally shape.",
+    code: `try:
+    result = 10 / divisor
+except ZeroDivisionError:
+    print("can't divide by zero")
+except (TypeError, ValueError) as e:
+    print(f"bad input: {e}")
+else:
+    print(f"result: {result}")      # only runs if no exception was raised
+finally:
+    print("always runs")              # cleanup, runs whether or not an exception occurred`,
+  },
+  examples: [
+    {
+      title: "EAFP vs. LBYL",
+      prompt: "Look up a key in a dict, the defensive way and the idiomatic Python way.",
+      code: `d = {"a": 1, "b": 2}
+
+# LBYL -- Java-style defensive check first
+if "c" in d:
+    value = d["c"]
+else:
+    value = 0
+
+# EAFP -- Python-idiomatic: just try it, handle the failure
+try:
+    value = d["c"]
+except KeyError:
+    value = 0
+
+# usually simplest of all for this specific case:
+value = d.get("c", 0)`,
+      explanation: "LBYL checks preconditions before acting, mirroring Java's defensive style — but it does the lookup twice in the worst case (once to check, once to use) and has a subtle race-condition risk in multithreaded code between the check and the use. EAFP just attempts the operation and handles failure, which is both the more idiomatic Python style and typically faster when the exception is rare. For this exact case, .get() sidesteps the whole question — but EAFP is the pattern to internalize for cases without a convenient built-in shortcut.",
+      output: "0 (all three versions)",
+    },
+    {
+      title: "Custom exceptions",
+      prompt: "Define and raise a custom exception, the Python equivalent of extending Exception in Java.",
+      code: `class InsufficientFundsError(Exception):
+    def __init__(self, balance, amount):
+        super().__init__(f"balance {balance} cannot cover withdrawal of {amount}")
+        self.balance = balance
+        self.amount = amount
+
+def withdraw(balance, amount):
+    if amount > balance:
+        raise InsufficientFundsError(balance, amount)
+    return balance - amount
+
+try:
+    withdraw(100, 150)
+except InsufficientFundsError as e:
+    print(f"Error: {e}")
+    print(e.balance, e.amount)   # custom exceptions can carry extra data`,
+      explanation: "Subclassing Exception is the Python equivalent of extends Exception in Java — no checked/unchecked distinction to worry about, since Python doesn't have checked exceptions at all. Just like a Java exception class, a Python exception class can carry extra fields (here, balance and amount) that the catching code can inspect.",
+      output: "Error: balance 100 cannot cover withdrawal of 150 / 100 150",
+    },
+  ],
+  gotchas: [
+    "Writing a bare <code>except:</code> with no type — this catches everything, including KeyboardInterrupt and SystemExit, silently swallowing bugs. Always name the exception type(s).",
+    "Forgetting Python has no checked exceptions — nothing forces you to handle an exception a function might raise; read the docs or source to know what to expect.",
+    "Using exceptions for routine control flow inappropriately — EAFP is idiomatic for genuinely exceptional/rare failure paths, not a substitute for a simple if-check on the common path.",
+  ],
+  practiceExercises: [
+    "Rewrite an LBYL dict lookup as EAFP using try/except",
+    "Define a custom exception class that carries an error code as an attribute",
+    "Add an else clause to a try/except and confirm it only runs when no exception is raised",
+  ],
+  quiz: [
+    {
+      question: "Does Python have Java-style checked exceptions?",
+      options: [
+        "No — all exceptions are unchecked, nothing forces you to catch them",
+        "Yes, identical to Java's checked exceptions",
+        "Only for custom exception classes",
+        "Only inside try blocks",
+      ],
+      correct: 0,
+      explanation: "Python's exception system has no compiler-enforced declare-or-catch requirement — every exception behaves like Java's unchecked RuntimeException.",
+    },
+    {
+      question: "What does the `else` clause in a Python try/except/else do?",
+      options: [
+        "Runs only if the try block completed with no exception raised",
+        "Runs only if an exception WAS raised",
+        "Always runs, like finally",
+        "Is a syntax error in Python",
+      ],
+      correct: 0,
+      explanation: "else separates the 'happy path' logic from the try block itself, running only when nothing went wrong.",
+    },
+    {
+      question: "What does 'EAFP' stand for and represent?",
+      options: [
+        "Easier to Ask Forgiveness than Permission — try the operation, handle failure via except, rather than checking preconditions first",
+        "Exceptions Are For Performance",
+        "Exception After Failure Pattern",
+        "Error Avoidance For Programmers",
+      ],
+      correct: 0,
+      explanation: "EAFP is Python's preferred style: attempt the operation directly and catch the failure, rather than defensively checking conditions beforehand (LBYL).",
+    },
+    {
+      question: "Why is a bare `except:` (no exception type) discouraged?",
+      options: [
+        "It catches everything including KeyboardInterrupt/SystemExit, silently swallowing bugs and making debugging harder",
+        "It's a syntax error",
+        "It only catches TypeError",
+        "It's slower than typed except clauses",
+      ],
+      correct: 0,
+      explanation: "A bare except catches even exceptions meant to interrupt the program (like Ctrl+C), which usually isn't the intent and hides real bugs.",
+    },
+    {
+      question: "How do you define a custom exception in Python?",
+      options: [
+        "Subclass Exception (or a more specific built-in exception)",
+        "Implement a Throwable interface",
+        "Use the @exception decorator",
+        "Custom exceptions aren't supported",
+      ],
+      correct: 0,
+      explanation: "Any class inheriting from Exception (directly or indirectly) can be raised and caught like a built-in exception.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>

@@ -2,6 +2,14 @@
 // to have it appear on the homepage — no other HTML changes needed.
 const TOPICS = [
   {
+    id: "python",
+    icon: "py",
+    title: "Python for Java Developers",
+    tagline: "Syntax translation, idioms, and the setup basics — start here.",
+    href: "topics/python/index.html",
+    status: "available",
+  },
+  {
     id: "dsa",
     icon: "{ }",
     title: "Data Structures & Algorithms",

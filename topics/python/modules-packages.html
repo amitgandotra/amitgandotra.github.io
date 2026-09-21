@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Modules, Packages & pip — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "modules-packages",
+  summary: "Python's import system replaces Java's package/classpath model: files are modules, folders (with an __init__.py) are packages, and pip plus a virtual environment replace Maven/Gradle's dependency resolution.",
+  keyDifferences: [
+    "Java: a package declaration must match its folder path exactly; the classpath tells the JVM where to find classes. Python: a file is automatically a module named after its filename; a folder becomes a package once it contains __init__.py.",
+    "Java: <code>import com.company.util.StringHelper;</code> imports one class from a fully-qualified path. Python: <code>import package.module</code> imports a module; <code>from package.module import name</code> imports a specific name directly into scope.",
+    "Java: Maven/Gradle resolve dependencies from Maven Central via pom.xml/build.gradle. Python: pip installs from PyPI using requirements.txt — conceptually the same job, a much simpler format.",
+    "Java: a .jar bundles compiled classes for distribution. Python: a package is published to PyPI as a source/wheel distribution, installed straight into a venv's site-packages.",
+    "Java: no concept of 'running a package directly' — you call a class's main(). Python: <code>if __name__ == \"__main__\":</code> is the idiom for 'only run this when the file is executed directly, not when it's imported.'",
+  ],
+  template: {
+    note: "Module imports, package imports, and the main-guard idiom.",
+    code: `import math                         # standard library module
+from collections import Counter      # import one name directly
+
+# my_package/
+#   __init__.py
+#   helpers.py
+
+from my_package import helpers        # import a module from a local package
+from my_package.helpers import add      # import one function directly
+
+if __name__ == "__main__":                # only runs when this file is executed directly
+    print("running as a script")`,
+  },
+  examples: [
+    {
+      title: 'The __name__ == "__main__" idiom',
+      prompt: "Show why this guard matters, contrasted with Java always needing an explicit main() call.",
+      code: `# file: calculator.py
+def add(a, b):
+    return a + b
+
+def main():
+    print(add(2, 3))
+
+if __name__ == "__main__":
+    main()`,
+      explanation: 'When calculator.py is run directly (python calculator.py), Python sets the special variable __name__ to "__main__", so main() executes. When another file does import calculator instead, __name__ is set to "calculator", so the guard is False and main() does NOT run automatically — only the function/class definitions become available. Java has no equivalent ambiguity: a class either has a main() that gets called explicitly, or it doesn\'t. Python files can serve double duty as both an importable module and a runnable script, and this guard is what makes that safe.',
+      output: "3 (only when run directly, not when imported)",
+    },
+    {
+      title: "Package structure and relative imports",
+      prompt: "Build a tiny multi-file package and import across its modules.",
+      code: `# project structure:
+# myapp/
+#   __init__.py
+#   models.py
+#   services.py
+
+# models.py
+class User:
+    def __init__(self, name):
+        self.name = name
+
+# services.py
+from .models import User      # relative import -- "from this same package"
+
+def create_user(name):
+    return User(name)
+
+# main.py (outside the package)
+from myapp.services import create_user
+u = create_user("Ada")`,
+      explanation: "The __init__.py file (even empty) is what makes Python treat the myapp/ folder as a package rather than just a plain directory, enabling myapp.services style imports. The leading dot in `from .models import User` is a relative import — it means 'the models module in my own package,' which stays correct even if the whole myapp package gets renamed or relocated, unlike an absolute import path that would need updating.",
+      output: "(no output -- demonstrates structure, not execution)",
+    },
+  ],
+  gotchas: [
+    "Running a file directly with a relative import inside it (<code>python myapp/services.py</code>) fails with an ImportError — relative imports only work when the file is imported as part of a package, which is exactly why -m matters.",
+    "Circular imports — module A imports module B which imports module A — are a real Python failure mode with no compiler to catch it upfront, unlike Java's more structural class loading.",
+    "Pre-3.3 Python required __init__.py for a folder to count as a package at all; modern Python supports 'namespace packages' without it, but an explicit __init__.py is still the common, predictable choice.",
+  ],
+  practiceExercises: [
+    "Create a two-file local package with __init__.py and import a function from one file into the other",
+    "Add an if __name__ == \"__main__\": guard to a script and confirm the guarded code doesn't run when the file is imported elsewhere",
+    "Deliberately create a circular import between two modules and read the resulting error",
+  ],
+  quiz: [
+    {
+      question: "What makes a Python folder a package?",
+      options: [
+        "Containing an __init__.py file (the conventional, explicit way)",
+        "Nothing is required — any folder is automatically a package",
+        "A package.json file",
+        "A pom.xml file",
+      ],
+      correct: 0,
+      explanation: "__init__.py is the traditional, explicit marker that turns a plain directory into an importable Python package.",
+    },
+    {
+      question: 'What is `if __name__ == "__main__":` used for?',
+      options: [
+        "Running code only when the file is executed directly, not when it's imported as a module",
+        "Declaring the program's entry point at compile time, like Java's main method signature",
+        "Checking if the file has any syntax errors",
+        "Importing the standard library",
+      ],
+      correct: 0,
+      explanation: "__name__ is set differently depending on whether a file is the one being run or one being imported, which this guard checks.",
+    },
+    {
+      question: "What's the Python equivalent of Maven/Gradle dependency resolution?",
+      options: [
+        "pip installing from PyPI, typically driven by a requirements.txt file",
+        "The __init__.py file",
+        "The import keyword alone",
+        "javac",
+      ],
+      correct: 0,
+      explanation: "pip + PyPI + requirements.txt together play the same role as Maven/Gradle + Maven Central + pom.xml/build.gradle.",
+    },
+    {
+      question: "What does a leading dot in `from .models import User` signify?",
+      options: [
+        "A relative import — 'from a module in my own package'",
+        "A syntax error",
+        "An absolute import from the filesystem root",
+        "A wildcard import",
+      ],
+      correct: 0,
+      explanation: "The dot anchors the import to the current package rather than the top-level import path, so it stays correct if the package is moved or renamed.",
+    },
+    {
+      question: "What happens if you run a file directly that contains a relative import, without using -m?",
+      options: [
+        "It raises an ImportError, since relative imports require the file to be run as part of a package",
+        "It works exactly the same as an absolute import",
+        "It automatically converts the import to absolute",
+        "Nothing — relative imports are silently ignored when run directly",
+      ],
+      correct: 0,
+      explanation: "Relative imports rely on package context that direct file execution doesn't provide, which is exactly the gap -m is designed to close.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>

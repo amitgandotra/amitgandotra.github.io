@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Iterators, Generators & Context Managers — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "iterators-generators",
+  summary: "Python's iterator protocol underlies every for loop, and generators (via yield) let you write lazy, memory-efficient sequences without building a custom Iterator class. Context managers (with) are Python's answer to Java's try-with-resources.",
+  keyDifferences: [
+    "Java: implementing Iterable/Iterator requires a class with hasNext()/next() methods. Python: the iterator protocol is __iter__/__next__, but yield inside a function auto-generates a full iterator with zero boilerplate.",
+    "Java: Stream.generate() / IntStream.iterate() approximate lazy sequences. Python: a generator function is lazy by default — values are computed one at a time, on demand, never all held in memory at once.",
+    "Java: try-with-resources — <code>try (var conn = openConnection()) { ... }</code> — requires the resource to implement AutoCloseable. Python: <code>with open(\"file\") as f:</code> — requires __enter__/__exit__; with is the direct equivalent.",
+    "Java: a custom AutoCloseable class implements close(). Python: a custom context manager implements __enter__ and __exit__, or uses @contextlib.contextmanager to write it as a generator function instead.",
+    "Java: a for-each loop works because collections implement Iterable directly. Python: a for loop works over ANYTHING implementing __iter__ — a generator, a file object (line by line), or a custom class — one uniform mechanism.",
+  ],
+  template: {
+    note: "A generator function, and a context manager built from one.",
+    code: `def countdown(n):
+    while n > 0:
+        yield n             # pauses here, resumes on the next call
+        n -= 1
+
+for i in countdown(3):        # 3, 2, 1 -- computed one at a time, not all upfront
+    print(i)
+
+from contextlib import contextmanager
+
+@contextmanager
+def timer_block():
+    import time
+    start = time.perf_counter()
+    yield                               # code inside the \`with\` block runs here
+    print(f"took {time.perf_counter() - start:.4f}s")
+
+with timer_block():
+    sum(range(10_000_000))`,
+  },
+  examples: [
+    {
+      title: "Generator vs. list — memory behavior",
+      prompt: "Contrast building a full list in memory with lazily generating values.",
+      code: `def squares_list(n):
+    return [i * i for i in range(n)]      # builds the ENTIRE list in memory upfront
+
+def squares_gen(n):
+    for i in range(n):
+        yield i * i                         # produces one value at a time, on demand
+
+# squares_list(10_000_000) allocates ~10 million ints all at once
+# squares_gen(10_000_000) allocates almost nothing until you iterate
+
+total = sum(squares_gen(10_000_000))     # never holds more than one value at a time
+print(total)`,
+      explanation: "squares_list must fully materialize every element before returning — for 10 million elements, that's real memory pressure. squares_gen is a generator function: calling it doesn't run the body at all, it returns a generator object that computes and yields exactly one value per next() call (which a for loop or sum() drives automatically). This is the closest Python equivalent to Java's Stream laziness, but built into the language rather than requiring a Stream API.",
+      output: "333333283333335000000",
+    },
+    {
+      title: "Custom context manager for guaranteed cleanup",
+      prompt: "Implement __enter__/__exit__ directly, the class-based analog to Java's AutoCloseable.",
+      code: `class ManagedResource:
+    def __enter__(self):
+        print("acquiring resource")
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        print("releasing resource")
+        return False     # False means "don't suppress the exception, if any"
+
+with ManagedResource() as r:
+    print("using resource")
+    # even if an exception were raised here, __exit__ still runs`,
+      explanation: "__enter__ runs when the with block starts and its return value becomes the as variable; __exit__ always runs when the block ends, whether it exited normally or via an exception — exactly like Java's AutoCloseable.close() being guaranteed inside try-with-resources. Returning False (or None) from __exit__ lets any exception propagate normally; returning True would suppress it, similar to catching and swallowing an exception in Java.",
+      output: "acquiring resource / using resource / releasing resource",
+    },
+  ],
+  gotchas: [
+    "Calling a generator function does NOT run its body — it returns a generator object; the body only executes as next() is called (directly or via a for loop).",
+    "A generator can only be iterated ONCE — once exhausted, it's done; you can't 're-iterate' it like a list, you'd need to call the generator function again for a fresh one.",
+    "Forgetting that with guarantees __exit__ runs even on exception — it's easy to assume cleanup only happens on the happy path, but that's exactly the case it's designed to handle.",
+  ],
+  practiceExercises: [
+    "Write a generator function that yields Fibonacci numbers indefinitely, then take just the first 10 with itertools.islice",
+    "Convert a class-based context manager to use @contextlib.contextmanager instead",
+    "Call next() twice past the end of an exhausted generator and read the StopIteration behavior",
+  ],
+  quiz: [
+    {
+      question: "What does calling a generator function (one containing yield) actually do?",
+      options: [
+        "Returns a generator object immediately, without running the function body yet",
+        "Runs the entire function body immediately, like a normal function",
+        "Raises an error unless called inside a for loop",
+        "Blocks until the first value is ready",
+      ],
+      correct: 0,
+      explanation: "The function body only starts executing once you call next() on the returned generator (directly or implicitly via a for loop).",
+    },
+    {
+      question: "What's the main advantage of a generator over building a full list upfront?",
+      options: [
+        "Lazy, on-demand computation — values are produced one at a time without holding the whole sequence in memory",
+        "Generators are always faster in Big-O terms",
+        "Generators support random access by index",
+        "Generators are mutable, lists are not",
+      ],
+      correct: 0,
+      explanation: "The core benefit is memory, not raw speed — a generator never materializes more than the current value at once.",
+    },
+    {
+      question: "What's the Python equivalent of Java's try-with-resources?",
+      options: [
+        "The `with` statement, using an object that implements __enter__ and __exit__",
+        "A try/finally block only",
+        "The @contextmanager decorator alone, with no other option",
+        "There is no equivalent",
+      ],
+      correct: 0,
+      explanation: "with plus the __enter__/__exit__ protocol guarantees cleanup the same way AutoCloseable does inside try-with-resources.",
+    },
+    {
+      question: "Does __exit__ run if an exception occurs inside a `with` block?",
+      options: [
+        "Yes — __exit__ always runs when the block ends, exception or not, just like AutoCloseable.close()",
+        "No, only on normal completion",
+        "Only if you explicitly call it",
+        "Only for built-in context managers, not custom ones",
+      ],
+      correct: 0,
+      explanation: "Guaranteed cleanup on both success and failure is the entire point of the context manager protocol.",
+    },
+    {
+      question: "Can a generator be iterated more than once?",
+      options: [
+        "No — once exhausted, it's done; you must call the generator function again for a fresh one",
+        "Yes, indefinitely, like a list",
+        "Yes, but only twice",
+        "Only if you call .reset() on it",
+      ],
+      correct: 0,
+      explanation: "A generator object tracks its own execution state internally and can't rewind — a new call to the generator function is required to iterate again.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>

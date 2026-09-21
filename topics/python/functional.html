@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Functional Python — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "functional",
+  summary: "Python treats functions as first-class objects — they can be passed around, returned, and wrapped, which is what makes decorators possible. Java only got closures (lambdas) in version 8, and still has no direct decorator equivalent.",
+  keyDifferences: [
+    "Java: methods aren't values — you need a functional interface (Runnable, Function&lt;T,R&gt;) to pass behavior around, or a lambda since Java 8. Python: functions are objects from day one — assign them to variables, put them in lists, pass them as arguments, no wrapper interface needed.",
+    "Java 8+: lambda syntax is <code>(a, b) -&gt; a + b</code>, single-expression only, and can only capture effectively final variables. Python: <code>lambda a, b: a + b</code> — same idea, also single-expression only, but closures can read any enclosing variable (and reassign with nonlocal).",
+    "Java: no direct decorator equivalent — annotations are metadata read by a framework, not functions that wrap other functions. Python: <code>@decorator</code> syntax literally wraps a function in another function at definition time — closer to a manual proxy/wrapper pattern than to an annotation.",
+    "Java: <code>Function.andThen()</code> / <code>.compose()</code> for chaining. Python: decorators, plus functools.reduce, achieve composition and pipelines directly.",
+    "Java: closures over local variables must be effectively final. Python: closures can read AND, with the nonlocal keyword, reassign an enclosing function's variables.",
+  ],
+  template: {
+    note: "A lambda, and the shape of a decorator factory.",
+    code: `add = lambda a, b: a + b       # equivalent to def add(a, b): return a + b
+print(add(2, 3))                  # 5
+
+def repeat(n):                       # decorator FACTORY -- returns a decorator
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            for _ in range(n):
+                func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@repeat(3)
+def greet():
+    print("hi")
+
+greet()      # prints "hi" three times`,
+  },
+  examples: [
+    {
+      title: "Closures",
+      prompt: "Build a counter function using a closure, contrasted with Java's effectively-final restriction.",
+      code: `def make_counter():
+    count = 0
+    def increment():
+        nonlocal count      # without this, count += 1 below raises UnboundLocalError
+        count += 1
+        return count
+    return increment
+
+counter = make_counter()
+print(counter())     # 1
+print(counter())      # 2
+print(counter())       # 3 -- count persists between calls, private to this counter instance`,
+      explanation: "increment is a closure — it 'closes over' the count variable from its enclosing scope, keeping it alive and private even after make_counter() has returned. Java's lambdas can read an enclosing local variable, but only if it's 'effectively final' (never reassigned) — Java has no equivalent to nonlocal that lets a lambda mutate an outer local variable directly; you'd typically need an array or atomic wrapper as a workaround.",
+      output: "1 / 2 / 3",
+    },
+    {
+      title: "Writing your own decorator",
+      prompt: "Build a @timer decorator that measures and prints how long any function takes to run.",
+      code: `import time
+from functools import wraps
+
+def timer(func):
+    @wraps(func)                          # preserves func's name/docstring for introspection
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        elapsed = time.perf_counter() - start
+        print(f"{func.__name__} took {elapsed:.4f}s")
+        return result
+    return wrapper
+
+@timer
+def slow_sum(n):
+    return sum(range(n))
+
+slow_sum(10_000_000)`,
+      explanation: "A decorator is just a function that takes a function and returns a (usually wrapped) function — @timer above def slow_sum is exactly equivalent to writing slow_sum = timer(slow_sum) right after the definition. The wrapper calls the original function, measures elapsed time around the call, and returns whatever the original returned, so decorating a function doesn't change its behavior from the caller's perspective — only adds behavior around it. @wraps(func) is a small but important detail: without it, slow_sum.__name__ would become 'wrapper' instead of 'slow_sum'.",
+      output: "slow_sum took 0.3xxx s",
+    },
+  ],
+  gotchas: [
+    "Forgetting nonlocal when a closure needs to REASSIGN (not just read) an enclosing variable — reading works without it, reassigning raises UnboundLocalError.",
+    "Writing a decorator without *args, **kwargs in the wrapper — it breaks for any decorated function whose signature doesn't match exactly what the wrapper hardcoded.",
+    "Forgetting @functools.wraps inside a custom decorator — introspection tools, debuggers, and help() will all show the wrapper's metadata instead of the original function's.",
+  ],
+  practiceExercises: [
+    "Write a closure-based counter and confirm each call to make_counter() produces an independent counter",
+    "Write a @retry(times=3) decorator that re-calls a function on exception, up to N times",
+    "Remove @wraps from the timer example and observe how slow_sum.__name__ changes",
+  ],
+  quiz: [
+    {
+      question: 'What does it mean that Python functions are "first-class objects"?',
+      options: [
+        "They can be assigned to variables, stored in collections, and passed as arguments, with no wrapper interface required",
+        "They run faster than other functions",
+        "They can only be called once",
+        "They must be defined at module level",
+      ],
+      correct: 0,
+      explanation: "Functions in Python are ordinary objects, just like ints or strings, so anything you can do with a value you can do with a function.",
+    },
+    {
+      question: "What restriction does Java 8+ place on variables a lambda captures from an enclosing scope?",
+      options: [
+        "They must be effectively final — never reassigned after initialization",
+        "They must be static",
+        "They must be primitives",
+        "There is no restriction",
+      ],
+      correct: 0,
+      explanation: "Java lambdas can only capture variables that behave as if declared final, to avoid ambiguity about which value the closure should see.",
+    },
+    {
+      question: "What does the `nonlocal` keyword do inside a nested function?",
+      options: [
+        "Allows the nested function to reassign a variable from its enclosing (non-global) scope, not just read it",
+        "Makes a variable globally accessible",
+        "Declares a variable as a constant",
+        "Imports a variable from another module",
+      ],
+      correct: 0,
+      explanation: "Without nonlocal, assigning to a name inside a nested function creates a new local variable instead of modifying the enclosing one.",
+    },
+    {
+      question: "What is a decorator, mechanically?",
+      options: [
+        "A function that takes a function and returns a (usually wrapped) function, applied via @ syntax",
+        "A Java-style annotation read by a framework at runtime",
+        "A special class that all decorated functions must inherit from",
+        "A way to add comments to a function",
+      ],
+      correct: 0,
+      explanation: "@decorator above a def is syntactic sugar for `func = decorator(func)` — it's ordinary function composition, not metadata.",
+    },
+    {
+      question: "Why use @functools.wraps inside a custom decorator?",
+      options: [
+        "It preserves the original function's __name__, docstring, and other metadata on the returned wrapper",
+        "It's required for the decorator to work at all",
+        "It makes the function run faster",
+        "It converts the function to a lambda",
+      ],
+      correct: 0,
+      explanation: "Without @wraps, the wrapper function's own metadata shadows the original's, which breaks introspection, debugging output, and documentation tools.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>

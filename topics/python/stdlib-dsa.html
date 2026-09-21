@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stdlib Essentials for DSA — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "stdlib-dsa",
+  summary: "A handful of standard library tools show up in nearly every DSA pattern in this roadmap. Knowing them cold is the difference between writing ten lines of boilerplate and one import.",
+  keyDifferences: [
+    "Java: ArrayDeque for a double-ended queue. Python: <code>collections.deque</code> — O(1) appends/pops from both ends, unlike list's O(n) pop(0).",
+    "Java: manually check-then-increment a HashMap&lt;K,Integer&gt; for counting. Python: <code>collections.Counter</code> — purpose-built, with .most_common() included.",
+    "Java: <code>map.computeIfAbsent(key, k -&gt; new ArrayList&lt;&gt;())</code> for the 'group into buckets' pattern. Python: <code>collections.defaultdict(list)</code> — the default factory eliminates the check entirely.",
+    "Java: PriorityQueue&lt;Integer&gt; for a min-heap. Python: the <code>heapq</code> module — functions operating on a plain list, not a class (min-heap only; negate values for a max-heap).",
+    "Java: Stream utilities and manual nested loops for combinations/permutations. Python: <code>itertools</code> — permutations(), combinations(), product(), chain() as ready-made generators.",
+    "Java: no direct built-in memoization annotation. Python: <code>functools.lru_cache</code> — a decorator that adds memoization to any function in one line.",
+  ],
+  template: {
+    note: "The imports you'll reach for constantly once you start the DSA roadmap.",
+    code: `from collections import Counter, defaultdict, deque
+import heapq
+from itertools import permutations, combinations
+from functools import lru_cache
+
+freq = Counter("mississippi")             # {'i': 4, 's': 4, 'p': 2, 'm': 1}
+groups = defaultdict(list)                 # missing keys auto-create an empty list
+dq = deque([1, 2, 3])                        # O(1) appendleft/popleft
+heapq.heappush([], 5)                          # min-heap operations on a plain list`,
+  },
+  examples: [
+    {
+      title: "Counter + defaultdict in one pass",
+      prompt: "Group words by length using defaultdict, then find the most common length with Counter.",
+      code: `from collections import Counter, defaultdict
+
+words = ["cat", "dog", "bird", "fish", "ox", "ant"]
+
+by_length = defaultdict(list)
+for w in words:
+    by_length[len(w)].append(w)      # no need to check "if key exists" first
+print(dict(by_length))    # {3: ['cat', 'dog', 'ant'], 4: ['bird', 'fish'], 2: ['ox']}
+
+length_counts = Counter(len(w) for w in words)
+print(length_counts.most_common(1))    # [(3, 3)] -- length 3 appears 3 times`,
+      explanation: "defaultdict(list) removes the classic 'if key not in d: d[key] = []' boilerplate — accessing a missing key auto-creates the default value (here, an empty list) instead of raising KeyError. Counter accepts any iterable, including a generator expression, and tallies it directly; .most_common(n) returns the n most frequent items sorted by count, descending.",
+      output: "{3: ['cat', 'dog', 'ant'], 4: ['bird', 'fish'], 2: ['ox']} / [(3, 3)]",
+    },
+    {
+      title: "heapq for a min-heap, lru_cache for memoization",
+      prompt: "Find the 3 smallest numbers with heapq, and memoize a recursive Fibonacci with lru_cache.",
+      code: `import heapq
+from functools import lru_cache
+
+nums = [7, 2, 9, 1, 5, 3]
+smallest_three = heapq.nsmallest(3, nums)
+print(smallest_three)      # [1, 2, 3]
+
+@lru_cache(maxsize=None)
+def fib(n):
+    if n <= 1:
+        return n
+    return fib(n - 1) + fib(n - 2)
+
+print(fib(30))     # fast -- each fib(n) computed exactly once, then cached`,
+      explanation: "heapq.nsmallest(k, iterable) is a convenience wrapper that's more efficient than sorting the whole list when k is much smaller than n. @lru_cache is a decorator (covered fully on the Functional Python page) that transparently memoizes a function's return value by its arguments — turning naive exponential recursive Fibonacci into linear time with one line added above the function, no manual memo dict required.",
+      output: "[1, 2, 3] / 832040",
+    },
+  ],
+  gotchas: [
+    "heapq is a MIN-heap only — for a max-heap, negate values on push and pop (heapq.heappush(heap, -value)), then negate again when reading.",
+    "lru_cache requires hashable arguments — decorating a function that takes a list argument raises a TypeError, since lists aren't hashable (tuples are the usual fix).",
+    "defaultdict's default factory runs on ANY missing-key access, including a plain read like <code>if d[key]:</code> — that read alone creates the key. Use <code>d.get(key)</code> or <code>key in d</code> if you don't want that side effect.",
+  ],
+  practiceExercises: [
+    "Rewrite a manual 'count occurrences' loop using Counter",
+    "Use itertools.combinations to generate all pairs from a 5-element list",
+    "Add @lru_cache to a slow recursive function and measure the speedup",
+  ],
+  quiz: [
+    {
+      question: "What does `collections.deque` offer over a plain list for queue-like operations?",
+      options: [
+        "O(1) append/pop from both ends, vs. list's O(n) pop(0) from the front",
+        "Nothing — they're identical in performance",
+        "Automatic sorting",
+        "Thread-safety",
+      ],
+      correct: 0,
+      explanation: "deque is implemented as a doubly-linked structure of blocks, so operations at either end don't require shifting the rest of the elements the way list.pop(0) does.",
+    },
+    {
+      question: "What problem does `defaultdict(list)` solve?",
+      options: [
+        "Eliminates the 'check if key exists, else create empty list' boilerplate before appending",
+        "Makes the dict immutable",
+        "Automatically sorts keys",
+        "Converts all existing values to lists",
+      ],
+      correct: 0,
+      explanation: "The default factory function runs automatically whenever a missing key is accessed, producing the initial value instead of raising KeyError.",
+    },
+    {
+      question: "Is Python's heapq a min-heap or max-heap by default?",
+      options: [
+        "Min-heap only — negate values to simulate a max-heap",
+        "Max-heap only",
+        "Both — you choose at creation",
+        "Neither, it's a generic priority structure with no ordering",
+      ],
+      correct: 0,
+      explanation: "heapq.heappop always returns the smallest element; there's no built-in max-heap variant.",
+    },
+    {
+      question: "What does the @lru_cache decorator do?",
+      options: [
+        "Transparently memoizes a function's return values by its arguments, avoiding recomputation for repeated calls",
+        "Limits how many times a function can be called",
+        "Runs the function in a separate thread",
+        "Logs every call to the function",
+      ],
+      correct: 0,
+      explanation: "It wraps the function with a cache keyed by the arguments passed, returning the stored result instead of recomputing on repeat calls.",
+    },
+    {
+      question: "Why does `@lru_cache` fail on a function called with a list argument?",
+      options: [
+        "Lists are unhashable, and lru_cache needs to use arguments as cache keys, which requires hashability",
+        "It doesn't fail — lists work fine",
+        "lru_cache only accepts integers",
+        "Lists are too large to cache",
+      ],
+      correct: 0,
+      explanation: "The cache is implemented as a dict keyed by the call arguments, and dict keys must be hashable — lists (mutable) aren't.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>

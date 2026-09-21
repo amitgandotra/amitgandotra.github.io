@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Concurrency, Memory & Java-Dev Gotchas — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/python-topics.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/python-nav.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "concurrency-memory",
+  summary: "Python's concurrency model has a fundamental difference from Java's that surprises every Java developer: the Global Interpreter Lock (GIL) means only one thread executes Python bytecode at a time, changing when threads, processes, and async are each the right tool. Memory management (reference counting + cyclic GC) also differs from the JVM's generational GC.",
+  keyDifferences: [
+    "Java: threads run truly in parallel across CPU cores (subject to synchronization). Python: CPython's Global Interpreter Lock (GIL) means only ONE thread executes Python bytecode at a time, even on a multi-core machine — threading gives concurrency, not parallelism, for CPU-bound code.",
+    "Java: threads handle both I/O-bound and CPU-bound parallel work. Python: <code>threading</code> for I/O-bound work (the GIL releases during I/O waits, so threads genuinely help), <code>multiprocessing</code> for CPU-bound work (separate processes, separate GILs, true parallelism), and <code>asyncio</code> for high-volume I/O-bound work without thread overhead.",
+    "Java: the JVM uses generational garbage collection; objects usually aren't reclaimed the instant they're unreachable. Python (CPython): primarily reference counting — an object is freed the moment its reference count hits zero, plus a periodic cyclic GC to catch reference cycles counting alone can't resolve.",
+    "Java: <code>==</code> on objects compares references by default (<code>.equals()</code> for value equality). Python: <code>==</code> compares values by default (delegating to __eq__); <code>is</code> compares identity — the operators are effectively swapped from Java muscle memory.",
+    "Java: small integers aren't cached identically. Python (CPython detail): small integers (-5 to 256) and some short strings are cached/interned, so <code>is</code> can appear to work for equality by accident on small values — a trap, not a guarantee.",
+  ],
+  template: {
+    note: "Three concurrency tools, three different jobs.",
+    code: `import threading, multiprocessing, asyncio
+
+# threading -- good for I/O-bound work (network calls, file I/O); GIL limits CPU parallelism
+t = threading.Thread(target=fetch_url, args=(url,))
+
+# multiprocessing -- good for CPU-bound work; separate processes, separate GILs, true parallelism
+p = multiprocessing.Process(target=cpu_heavy_task, args=(data,))
+
+# asyncio -- good for high-volume I/O-bound work; single thread, cooperative multitasking
+async def fetch(url):
+    ...  # await releases control during I/O waits, no OS thread needed per task`,
+  },
+  examples: [
+    {
+      title: "The GIL in action",
+      prompt: "Show why threading doesn't speed up a CPU-bound task, contrasted with what a Java developer would expect.",
+      code: `import threading
+import time
+
+def cpu_bound(n):
+    count = 0
+    for _ in range(n):
+        count += 1
+    return count
+
+start = time.perf_counter()
+threads = [threading.Thread(target=cpu_bound, args=(10_000_000,)) for _ in range(4)]
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+print(f"threaded: {time.perf_counter() - start:.2f}s")
+
+# running cpu_bound(10_000_000) four times sequentially takes roughly the SAME time --
+# the GIL serializes Python bytecode execution across all four threads`,
+      explanation: "In Java, four threads doing CPU-bound work on a multi-core machine would genuinely run in parallel, finishing in roughly 1/4 the time of running sequentially. In CPython, the GIL only allows one thread to execute Python bytecode at any instant, so these four threads take turns rather than running simultaneously — the wall-clock time ends up close to running all four sequentially, not 4x faster. This is THE most common surprise for Java developers moving to Python: swap in multiprocessing.Process instead of threading.Thread for CPU-bound work, since each process gets its own interpreter and its own GIL.",
+      output: "threaded: ~same time as running sequentially (no 4x speedup)",
+    },
+    {
+      title: "== vs is, and the small-int caching trap",
+      prompt: "The operators Java developers most often get backwards, plus a CPython detail that can mask the bug.",
+      code: `a = [1, 2, 3]
+b = [1, 2, 3]
+print(a == b)       # True -- == compares values (like Java's .equals())
+print(a is b)         # False -- is compares identity (like Java's ==)
+
+x = 200
+y = 200
+print(x is y)             # True on most CPython builds -- small ints are cached/interned
+
+x = 1000
+y = 1000
+print(x is y)               # False (or unreliable) -- large ints usually are NOT cached`,
+      explanation: "Python's == and is are the functional inverse of what a Java developer's habits expect: Java's == is identity (use .equals() for value comparison), while Python's == is value comparison by default (use is for identity). The small-integer example is a CPython implementation detail, not a language guarantee — CPython caches small integers (-5 to 256) as singletons, so is can accidentally 'work' for equality on small numbers, tricking developers into thinking is is safe for value comparison generally. It never should be used that way — always use == for values.",
+      output: "True / False / True / False",
+    },
+  ],
+  gotchas: [
+    "Expecting threading to speed up CPU-bound Python code — the GIL prevents true parallel execution of Python bytecode; use multiprocessing instead.",
+    "Using is to compare values instead of == — it may appear to work for small cached integers/strings and then mysteriously break for larger ones or different objects.",
+    "Assuming Python's reference-counting GC means memory is freed instantly in all cases — reference cycles (an object graph that references itself) aren't cleaned up by counting alone and rely on the separate cyclic garbage collector.",
+  ],
+  practiceExercises: [
+    "Rewrite the CPU-bound threading example using multiprocessing.Process and compare wall-clock time",
+    'Predict, then verify, whether "hello" is "hello" is True or False for two separately-constructed strings',
+    "Read up on asyncio and identify one scenario where it would beat both threading and multiprocessing",
+  ],
+  quiz: [
+    {
+      question: "What does the GIL (Global Interpreter Lock) prevent in CPython?",
+      options: [
+        "Multiple threads from executing Python bytecode simultaneously, even on multi-core hardware",
+        "Any use of threads at all",
+        "Garbage collection from running",
+        "Importing multiple modules at once",
+      ],
+      correct: 0,
+      explanation: "The GIL serializes bytecode execution to one thread at a time, which is why CPU-bound threading doesn't scale with core count the way it does in Java.",
+    },
+    {
+      question: "Which tool should you reach for to genuinely parallelize CPU-bound Python work across cores?",
+      options: [
+        "multiprocessing, since each process gets its own interpreter and GIL",
+        "threading, since Python threads are always parallel",
+        "asyncio, since it's the fastest option for everything",
+        "There is no way to achieve this in Python",
+      ],
+      correct: 0,
+      explanation: "Separate OS processes each run their own Python interpreter with its own GIL, sidestepping the single-GIL bottleneck entirely.",
+    },
+    {
+      question: "What does Python's `==` operator do by default?",
+      options: [
+        "Compares values (delegates to __eq__), unlike Java where == compares references",
+        "Compares identity/references, like Java's ==",
+        "Always returns True for same-type objects",
+        "Raises an error for custom objects",
+      ],
+      correct: 0,
+      explanation: "Python's == is a value comparison by default, functionally matching what Java developers expect from .equals(), not ==.",
+    },
+    {
+      question: "Why might `x is y` return True for `x = 200; y = 200` but False for `x = 1000; y = 1000`?",
+      options: [
+        "CPython caches small integers (-5 to 256) as singletons as an implementation detail, not a language guarantee",
+        "Large numbers can't use is in Python",
+        "It's a bug that will be fixed in future versions",
+        "200 is always cached and 1000 never is, by language specification",
+      ],
+      correct: 0,
+      explanation: "The small-int cache is a CPython optimization detail, not part of the language spec — relying on is for integer equality is never correct, even when it happens to work.",
+    },
+    {
+      question: "How does CPython primarily manage memory for most objects?",
+      options: [
+        "Reference counting — an object is freed the moment its reference count hits zero, plus a cyclic GC for reference cycles",
+        "Purely generational garbage collection, identical to the JVM",
+        "Manual memory management, like C",
+        "There is no garbage collection in Python",
+      ],
+      correct: 0,
+      explanation: "Reference counting handles the common case immediately; the supplementary cyclic collector exists specifically to catch objects that reference each other in a cycle, which counting alone can't free.",
+    },
+  ],
+};
+</script>
+<script src="../../js/python-page.js"></script>
+</body>
+</html>
