@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Proxy — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html" class="active">Patterns</a>
+      <a href="../integration/index.html">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "A proxy stands in for another object and controls access to it: lazy loading an expensive resource, caching results, checking permissions, or rate limiting. Callers use the proxy exactly like the real object.",
+  keyHeading: "When to use it, and the Pythonic take",
+  keyPoints: [
+    "<strong>Virtual proxy</strong>: delay creating something expensive until first use.",
+    "<strong>Protection proxy</strong>: check permissions before delegating.",
+    "<strong>Caching / rate-limiting proxy</strong>: reduce calls to a slow or metered API.",
+    "Structurally similar to Decorator; the intent differs. Decorator adds features, Proxy controls access to the same object.",
+    "Python extras: <code>functools.cached_property</code> for lazy attributes, <code>__getattr__</code> for transparent delegation.",
+  ],
+  template: {
+    heading: "Lazy (virtual) proxy",
+    label: "python",
+    note: "The expensive object is only built on first real use.",
+    code: `class ExpensiveModel:
+    def __init__(self):
+        print("loading model...")     # imagine 30 seconds here
+    def predict(self, x):
+        return x * 2
+
+class LazyModel:
+    def __init__(self):
+        self._real = None
+    def predict(self, x):
+        if self._real is None:
+            self._real = ExpensiveModel()
+        return self._real.predict(x)
+
+m = LazyModel()          # instant: nothing loaded yet
+print(m.predict(21))     # loads now, then predicts`,
+  },
+  examples: [
+    {
+      title: "Protection proxy",
+      prompt: "Only admins may call destructive methods; everything else passes through.",
+      code: `class Database:
+    def read(self, key):   return f"value:{key}"
+    def delete(self, key): return f"deleted:{key}"
+
+class GuardedDatabase:
+    def __init__(self, db, role):
+        self._db, self._role = db, role
+    def read(self, key):
+        return self._db.read(key)
+    def delete(self, key):
+        if self._role != "admin":
+            raise PermissionError("admin only")
+        return self._db.delete(key)
+
+viewer = GuardedDatabase(Database(), "viewer")
+print(viewer.read("a"))
+try:
+    viewer.delete("a")
+except PermissionError as e:
+    print("blocked:", e)`,
+      explanation: "The caller holds what looks like a Database. The proxy enforces policy in one place instead of every call site trusting itself.",
+      output: "value:a / blocked: admin only",
+    },
+    {
+      title: "Lazy attribute with cached_property",
+      prompt: "Python has built-in lazy evaluation for attributes.",
+      code: `from functools import cached_property
+
+class Customer:
+    def __init__(self, cid):
+        self.cid = cid
+
+    @cached_property
+    def history(self):
+        print("querying history...")
+        return [f"order-{self.cid}-1", f"order-{self.cid}-2"]
+
+c = Customer(9)
+print(c.history)    # runs the query
+print(c.history)    # cached: no second query`,
+      explanation: "The first access computes and stores the value on the instance; later accesses read it directly. For many 'lazy load' needs this is simpler than writing a proxy class.",
+      output: "querying history... / [...] / [...]",
+    },
+  ],
+  gotchas: [
+    "Caching proxies serve stale data. Decide on expiry or invalidation.",
+    "A proxy that swallows or reshapes errors makes debugging hard. Preserve exceptions.",
+    "Lazy creation and threads: two threads may both create the object. Guard with a lock if that matters.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Add a TTL to a caching proxy so entries expire after 60 seconds.",
+    "Make the lazy proxy thread-safe with a lock.",
+    "Build a rate-limiting proxy that allows at most N calls per second.",
+  ],
+  quiz: [
+    {
+      question: "What is the purpose of a proxy?",
+      options: [
+        "To control access to another object while presenting the same interface",
+        "To create exactly one instance",
+        "To translate between unrelated interfaces",
+        "To undo actions",
+      ],
+      correct: 0,
+      explanation: "Callers use the proxy like the real object; the proxy adds access control, laziness, or caching.",
+    },
+    {
+      question: "What is a virtual proxy for?",
+      options: [
+        "Delaying creation of an expensive object until it is needed",
+        "Checking passwords",
+        "Logging every call",
+        "Sorting results",
+      ],
+      correct: 0,
+      explanation: "It defers the cost until first real use.",
+    },
+    {
+      question: "How does Proxy differ from Decorator in intent?",
+      options: [
+        "Proxy controls access to the object; Decorator adds behavior/features",
+        "They're unrelated",
+        "Proxy only works on functions",
+        "Decorator only works on classes",
+      ],
+      correct: 0,
+      explanation: "The structure is similar, but the goals differ.",
+    },
+    {
+      question: "What does functools.cached_property provide?",
+      options: [
+        "A lazily computed attribute stored after first access",
+        "Thread pools",
+        "A database connection",
+        "Encryption",
+      ],
+      correct: 0,
+      explanation: "It computes once per instance and reuses the result.",
+    },
+    {
+      question: "What is a common risk of caching proxies?",
+      options: [
+        "Serving stale data",
+        "Higher memory for zero data",
+        "Syntax errors",
+        "Losing type hints",
+      ],
+      correct: 0,
+      explanation: "Cached data can outlive its validity.",
+    },
+  ],
+  id: "proxy",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

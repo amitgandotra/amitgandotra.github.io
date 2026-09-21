@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pattern Recognition Playbook — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <div class="content">
+    <div class="breadcrumb"><a href="../../index.html">Becoming FDE</a> / <a href="index.html">Data Structures &amp; Algorithms</a> / Foundations / Pattern Recognition Playbook</div>
+    <span class="badge badge-foundations tier-tag">Foundations</span>
+    <h1>Pattern Recognition Playbook</h1>
+    <p>
+      Most interview problems are a familiar technique in disguise. The skill is not memorising solutions, it is
+      noticing the <strong>keywords, data shape and constraints</strong> that give the technique away. This page is the
+      cheat sheet for the whole DSA topic: a process to follow, <strong>"if you see X, think Y" rules</strong>, two decision
+      guides (by input shape and by what the question asks), the pattern catalog, a constraints-to-complexity table, an
+      interactive pattern finder, a Python toolbox, and a drill to train your eye.
+    </p>
+
+    <h2>1. A process for any problem</h2>
+    <ol class="steps" id="steps"></ol>
+
+    <h2>2. If you see X, think Y</h2>
+    <p>Quick rules. Click a pattern to open its lesson. Type to filter.</p>
+    <input type="search" id="rule-filter" class="rule-filter" placeholder="Filter rules, e.g. sorted, grid, prerequisites..." aria-label="Filter rules" />
+    <div class="complexity-table-wrap">
+      <table class="complexity-table playbook-table">
+        <thead><tr><th>If you see...</th><th>Think</th></tr></thead>
+        <tbody id="rules-table"></tbody>
+      </table>
+    </div>
+
+    <h2>3. Decision guide: by the shape of the input</h2>
+    <p>Start from what you are given. These are the patterns worth considering for each shape.</p>
+    <div class="complexity-table-wrap">
+      <table class="complexity-table playbook-table">
+        <thead><tr><th>Input shape</th><th>Consider</th></tr></thead>
+        <tbody id="shape-table"></tbody>
+      </table>
+    </div>
+
+    <h2>4. Decision guide: by what the question asks</h2>
+    <p>Then look at the last sentence of the problem. What are you asked to produce?</p>
+    <div class="complexity-table-wrap">
+      <table class="complexity-table playbook-table">
+        <thead><tr><th>The question asks</th><th>Consider</th></tr></thead>
+        <tbody id="question-table"></tbody>
+      </table>
+    </div>
+
+    <h2>5. The pattern catalog</h2>
+    <p>One row per technique: the question to ask yourself, and the trigger words. Each lesson has a template, worked examples, disguised problems, a Python example, and a numbered LeetCode list.</p>
+    <div class="complexity-table-wrap">
+      <table class="complexity-table playbook-table">
+        <thead><tr><th>Pattern</th><th>Ask yourself</th><th>Trigger words</th></tr></thead>
+        <tbody id="pattern-table"></tbody>
+      </table>
+    </div>
+    <p class="track-note">Problems that need two patterns at once are in <a id="combo-link" href="combining-patterns.html">Combining Patterns</a>.</p>
+
+    <h2>6. Constraints tell you the target complexity</h2>
+    <p>Look at the input size <code>n</code> before you pick an approach. It rules whole families of solutions in or out.</p>
+    <div class="complexity-table-wrap">
+      <table class="complexity-table playbook-table">
+        <thead><tr><th>Input size</th><th>Aim for</th><th>Typical techniques</th></tr></thead>
+        <tbody id="constraint-table"></tbody>
+      </table>
+    </div>
+    <p id="constraint-note" class="track-note"></p>
+
+    <h2>7. Try it: pattern finder</h2>
+    <p>Paste or type a problem statement. The finder highlights trigger words and suggests patterns. It is a heuristic to train your instincts, not an oracle.</p>
+    <div class="finder">
+      <textarea id="finder-input" placeholder="e.g. Given a string, find the length of the longest substring without repeating characters." aria-label="Problem statement"></textarea>
+      <div class="chips" style="margin-top:10px" id="finder-samples"></div>
+      <div id="finder-preview"></div>
+      <div class="finder-results" id="finder-results"></div>
+    </div>
+
+    <h2>8. Python toolbox</h2>
+    <p>These standard-library pieces show up in almost every pattern. Know them cold.</p>
+    <div class="toolbox" id="toolbox"></div>
+
+    <h2>9. Python gotchas (especially coming from Java)</h2>
+    <div id="pitfalls"></div>
+
+    <h2>10. Practice: which pattern?</h2>
+    <p>The quiz below shows a problem statement with the cue words left unmarked. Wrong answers are deliberately look-alike patterns. Afterwards the explanation names the cue words you should have caught.</p>
+
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz: name the pattern</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script src="../../js/data/dsa-tips.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const T = window.DSA_TIPS;
+  const esc = SiteNav.esc;
+  const unmarked = (t) => String(t).replace(/\*\*(.+?)\*\*/g, "$1").replace(/`([^`]+)`/g, "<code>$1</code>"); // cues hidden in the drill
+  const plain = (t) => String(t).replace(/\*\*(.+?)\*\*/g, "$1").replace(/`([^`]+)`/g, "$1");
+  const code = (c) => `<pre><code>${highlightPython(c)}</code></pre>`;
+
+  // lesson id -> {title, url}
+  const info = {};
+  SiteNav.pagesOf(SiteNav.topicById.dsa).forEach((e) => (info[e.page.id] = { title: e.page.title, url: e.url }));
+  const ids = Object.keys(T.patterns).filter((id) => info[id]);
+  const chip = (id, note) => info[id]
+    ? `<a class="chip" href="${info[id].url}">${esc(info[id].title)}${note ? ` <span class="chip-topic">${esc(note)}</span>` : ""}</a>`
+    : "";
+
+  // 1. steps
+  document.getElementById("steps").innerHTML = T.general.steps.map((s) => `<li>${esc(s)}</li>`).join("");
+
+  // 2. rules (filterable)
+  const rulesBody = document.getElementById("rules-table");
+  const renderRules = (q) => {
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    rulesBody.innerHTML = T.general.rules
+      .filter((r) => { const hay = (r.when + " " + r.think).toLowerCase(); return words.every((w) => hay.includes(w)); })
+      .map((r) => `<tr><td>${esc(r.when)}</td><td><strong>${esc(r.think)}</strong><div class="chips" style="margin-top:6px">${r.ids.map((id) => chip(id)).join("")}</div></td></tr>`)
+      .join("") || `<tr><td colspan="2" class="finder-empty">No rule matches. Try a shorter word.</td></tr>`;
+  };
+  renderRules("");
+  document.getElementById("rule-filter").addEventListener("input", (e) => renderRules(e.target.value));
+
+  // 3 and 4. decision guides
+  document.getElementById("shape-table").innerHTML = T.general.byShape
+    .map((g) => `<tr><td><strong>${esc(g.shape)}</strong></td><td><div class="chips">${g.consider.map(([id, note]) => chip(id, note)).join("")}</div></td></tr>`)
+    .join("");
+  document.getElementById("question-table").innerHTML = T.general.byQuestion
+    .map((g) => `<tr><td><strong>${esc(g.ask)}</strong></td><td><div class="chips">${g.consider.map(([id, note]) => chip(id, note)).join("")}</div></td></tr>`)
+    .join("");
+
+  // 5. catalog
+  document.getElementById("pattern-table").innerHTML = ids
+    .map((id) => {
+      const p = T.patterns[id];
+      return `<tr><td class="pat"><a href="${info[id].url}">${esc(info[id].title)}</a></td><td>${esc(p.ask)}</td><td class="cues">${p.cues.map(esc).join(" &middot; ")}</td></tr>`;
+    })
+    .join("");
+  if (info["combining-patterns"]) document.getElementById("combo-link").href = info["combining-patterns"].url;
+
+  // 6. constraints
+  document.getElementById("constraint-table").innerHTML = T.general.constraints
+    .map((r) => `<tr><td class="tag">${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`)
+    .join("");
+  document.getElementById("constraint-note").textContent = T.general.constraintsNote;
+
+  // 7. pattern finder
+  const input = document.getElementById("finder-input");
+  const results = document.getElementById("finder-results");
+  const preview = document.getElementById("finder-preview");
+  const samples = [
+    "Find the length of the longest substring without repeating characters.",
+    "Given n courses and their prerequisites, return a valid order to take them all.",
+    "Return the number of distinct ways to climb n stairs taking 1 or 2 steps at a time.",
+    "Given a sorted array, find two numbers that add up to a target using constant extra space.",
+  ];
+  document.getElementById("finder-samples").innerHTML = samples
+    .map((s, i) => `<button type="button" class="chip" data-i="${i}">${esc(s.split(" ").slice(0, 6).join(" "))}&hellip;</button>`)
+    .join("");
+  document.getElementById("finder-samples").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button[data-i]");
+    if (!b) return;
+    input.value = samples[Number(b.dataset.i)];
+    analyze();
+  });
+
+  const reEscape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // a key must start at a word boundary, so "sorted" does not match inside "unsorted"
+  const hasKey = (low, k) => new RegExp("(?<![a-z0-9])" + reEscape(k)).test(low);
+
+  function analyze() {
+    const text = input.value;
+    const low = text.toLowerCase();
+    const scored = [];
+    for (const id of ids) {
+      let score = 0;
+      const hits = [];
+      for (const [k, w] of T.patterns[id].keys) {
+        if (hasKey(low, k)) { score += w; hits.push(k); }
+      }
+      if (score) scored.push({ id, score, hits });
+    }
+    scored.sort((a, b) => b.score - a.score);
+    const top = scored.slice(0, 3);
+
+    if (!text.trim()) {
+      preview.innerHTML = "";
+      results.innerHTML = `<p class="finder-empty">Type or paste a problem, or click a sample.</p>`;
+      return;
+    }
+    const keys = [...new Set(top.flatMap((t) => t.hits))].sort((a, b) => b.length - a.length);
+    let html = esc(text);
+    if (keys.length) html = html.replace(new RegExp("(?<![a-z0-9])(" + keys.map(reEscape).join("|") + ")", "gi"), "<mark>$1</mark>");
+    preview.innerHTML = `<div class="finder-preview">${html}</div>`;
+
+    results.innerHTML = top.length
+      ? top
+          .map(
+            (t) => `<a class="finder-hit" href="${info[t.id].url}">
+              <span class="fh-score">score ${t.score}</span>
+              <span class="fh-title">${esc(info[t.id].title)}</span>
+              <span class="fh-why">Matched: ${t.hits.map(esc).join(", ")}. ${esc(T.patterns[t.id].ask)}</span>
+            </a>`
+          )
+          .join("")
+      : `<p class="finder-empty">No strong trigger words found. Re-read the constraints, look for the structure (sorted, contiguous, graph-like, two sequences), and start with a brute force.</p>`;
+  }
+  input.addEventListener("input", analyze);
+  analyze();
+
+  // 8. toolbox
+  document.getElementById("toolbox").innerHTML = T.general.toolbox
+    .map((t) => `<div class="tool"><h4>${esc(t.name)}</h4><p>${esc(t.use)}</p>${code(t.code)}</div>`)
+    .join("");
+
+  // 9. pitfalls
+  document.getElementById("pitfalls").innerHTML = T.general.pitfalls
+    .map((p) => `<div class="pitfall"><h4>${esc(p.title)}</h4>${code(p.code)}${p.note ? `<p>${p.note}</p>` : ""}</div>`)
+    .join("");
+
+  // 10. drill: one random disguised problem for each of 10 random patterns; wrong answers are look-alikes
+  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const picked = shuffle(ids.slice()).slice(0, 10);
+  const questions = picked.map((id) => {
+    const spot = T.patterns[id].spot[Math.floor(Math.random() * T.patterns[id].spot.length)];
+    const lookalikes = shuffle((T.general.confusable[id] || []).filter((x) => info[x] && x !== id));
+    const rest = shuffle(ids.filter((x) => x !== id && !lookalikes.includes(x)));
+    const decoys = [...lookalikes.slice(0, 2), ...rest].slice(0, 3);
+    const options = shuffle([id, ...decoys]).map((x) => info[x].title);
+    const cues = (spot.text.match(/\*\*(.+?)\*\*/g) || []).map((m) => m.slice(2, -2));
+    return {
+      question: `Which pattern fits this problem?<br><em>${unmarked(spot.text)}</em>`,
+      options,
+      correct: options.indexOf(info[id].title),
+      explanation: `${info[id].title}. Cue words: ${cues.join(", ") || "see the lesson"}. ${plain(spot.why)}`,
+    };
+  });
+  initQuiz({ containerId: "quiz-container", questions, topicId: "dsa", patternId: "playbook" });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Matrix Traversal — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "matrix-traversal",
+  summary: "A grid is a graph: each cell is a node and its up/down/left/right neighbours are the edges. Learn the direction loop, the bounds check and the visited marking once, and you can solve islands, flood fill, enclosed regions, mazes and boundary tricks. Some matrix problems are about walking the grid in a special order (spiral, rotate) instead.",
+  recognize: [
+    "Input is a <strong>grid, matrix or board</strong> of cells",
+    "Islands, regions, flood fill, connected cells of the same kind",
+    "'Surrounded by', border cells, 'reach the edge'",
+    "Neighbours are adjacent cells (4 or 8 directions)",
+    "Spiral order, rotate or transpose in place, word on a board",
+  ],
+  template: {
+    note: "The four-direction neighbour generator with a bounds check. Reuse it in every grid problem.",
+    code: `DIRS = ((1, 0), (-1, 0), (0, 1), (0, -1))
+
+def neighbors(r, c, rows, cols):
+    for dr, dc in DIRS:
+        nr, nc = r + dr, c + dc
+        if 0 <= nr < rows and 0 <= nc < cols:
+            yield nr, nc`,
+  },
+  examples: [
+    {
+      title: "Number of Islands",
+      prompt: "Given a grid of <code>'1'</code> (land) and <code>'0'</code> (water), count the <strong>islands</strong>: groups of land cells connected horizontally or vertically.",
+      code: `def num_islands(grid):
+    if not grid:
+        return 0
+    rows, cols = len(grid), len(grid[0])
+    seen = set()
+
+    def dfs(r, c):
+        if (r < 0 or r >= rows or c < 0 or c >= cols
+                or grid[r][c] == "0" or (r, c) in seen):
+            return
+        seen.add((r, c))
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            dfs(r + dr, c + dc)
+
+    islands = 0
+    for r in range(rows):
+        for c in range(cols):
+            if grid[r][c] == "1" and (r, c) not in seen:
+                dfs(r, c)                  # flood-fill the whole island
+                islands += 1
+    return islands`,
+      explanation: "Scan every cell. An unvisited land cell starts a new island, and one flood fill marks all of it, so each island is counted once.",
+      complexity: "Time: O(rows × cols) · Space: O(rows × cols)",
+      complexityWhy: "Every cell is visited at most once by the flood fills and once by the outer scan. The visited set and, for an all-land grid, the recursion stack can each reach rows × cols.",
+    },
+    {
+      title: "Surrounded Regions (start from the border)",
+      prompt: "Capture every region of <code>'O'</code> that is <strong>completely surrounded</strong> by <code>'X'</code> by flipping it to <code>'X'</code>. Regions touching the border are safe.",
+      code: `def solve(board):
+    rows, cols = len(board), len(board[0])
+
+    def mark_safe(r, c):
+        if r < 0 or r >= rows or c < 0 or c >= cols or board[r][c] != "O":
+            return
+        board[r][c] = "S"                       # safe: connected to the border
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            mark_safe(r + dr, c + dc)
+
+    for r in range(rows):
+        for c in range(cols):
+            if r in (0, rows - 1) or c in (0, cols - 1):
+                mark_safe(r, c)                 # begin at every border cell
+
+    for r in range(rows):
+        for c in range(cols):
+            if board[r][c] == "O":
+                board[r][c] = "X"               # not safe: capture it
+            elif board[r][c] == "S":
+                board[r][c] = "O"               # restore the safe cells`,
+      explanation: "Searching for enclosed regions directly is awkward. Flip the question: which 'O' cells can <em>escape</em>? Start a DFS from every border 'O', mark what it reaches as safe, then capture everything else. Working from the boundary inward is a very common grid trick.",
+      complexity: "Time: O(rows × cols) · Space: O(rows × cols)",
+      complexityWhy: "Each cell is marked at most once and scanned twice. The recursion can be as deep as the number of connected 'O' cells.",
+    },
+  ],
+  gotchas: [
+    "Check the bounds <em>before</em> indexing the grid. A negative index silently wraps around in Python.",
+    "Building a grid with <code>[[0] * n] * m</code> makes every row the same list. Use a comprehension.",
+    "For large grids, recursive DFS can exceed the recursion limit. Use BFS or an explicit stack.",
+    "If you mutate the grid to mark visited cells, restore it if the caller still needs it (Word Search does).",
+  ],
+  practiceProblems: [
+    {
+      n: 733,
+      title: "Flood Fill",
+      slug: "flood-fill",
+      level: "Easy",
+    },
+    {
+      n: 200,
+      title: "Number of Islands",
+      slug: "number-of-islands",
+      level: "Medium",
+    },
+    {
+      n: 695,
+      title: "Max Area of Island",
+      slug: "max-area-of-island",
+      level: "Medium",
+    },
+    {
+      n: 130,
+      title: "Surrounded Regions",
+      slug: "surrounded-regions",
+      level: "Medium",
+    },
+    {
+      n: 417,
+      title: "Pacific Atlantic Water Flow",
+      slug: "pacific-atlantic-water-flow",
+      level: "Medium",
+    },
+    {
+      n: 54,
+      title: "Spiral Matrix",
+      slug: "spiral-matrix",
+      level: "Medium",
+    },
+    {
+      n: 48,
+      title: "Rotate Image",
+      slug: "rotate-image",
+      level: "Medium",
+    },
+    {
+      n: 79,
+      title: "Word Search",
+      slug: "word-search",
+      level: "Medium",
+    },
+  ],
+  quiz: [
+    {
+      question: "What is the first thing to check before reading grid[nr][nc] for a neighbour?",
+      options: ["That 0 <= nr < rows and 0 <= nc < cols", "That the cell is land", "That the cell is visited", "That the grid is square"],
+      correct: 0,
+      explanation: "Python allows negative indexes, so an out-of-range row of -1 would silently read the last row.",
+    },
+    {
+      question: "How can you avoid a separate visited set in a grid flood fill?",
+      options: ["Overwrite visited cells in the grid (for example '1' becomes '0' or '#')", "Sort the grid", "Use recursion only", "It is impossible"],
+      correct: 0,
+      explanation: "Mutating the grid doubles as the visited marker (restore it if you must preserve the input).",
+    },
+    {
+      question: "What is the key idea in Surrounded Regions?",
+      options: ["Start from the border 'O' cells and mark everything reachable as safe; capture the rest", "Check every region for four X neighbours", "Sort the cells by row", "Use Dijkstra"],
+      correct: 0,
+      explanation: "It is easier to find what escapes to the border than what is enclosed.",
+    },
+    {
+      question: "What is the time complexity of Number of Islands on a rows x cols grid?",
+      options: ["O(rows * cols)", "O(rows + cols)", "O((rows * cols)^2)", "O(log(rows * cols))"],
+      correct: 0,
+      explanation: "Each cell is visited a constant number of times.",
+    },
+    {
+      question: "Why might you prefer BFS or an explicit stack over recursion for a huge grid?",
+      options: ["Recursion depth can exceed Python's limit on a large connected region", "BFS is always faster", "Recursion cannot handle grids", "Stacks use no memory"],
+      correct: 0,
+      explanation: "A single island covering 100,000 cells would recurse 100,000 levels deep.",
+    },
+  ],
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

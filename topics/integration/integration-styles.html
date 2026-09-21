@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Integration Styles &amp; Landscape — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html">Patterns</a>
+      <a href="../integration/index.html" class="active">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Almost every customer engagement is an integration problem: your product has to exchange data with systems you don't control. There are four classic styles. Knowing which fits a situation (and what each costs) is the first design decision you make on site.",
+  keyHeading: "The four styles and when they fit",
+  keyPoints: [
+    "<strong>Request/response API</strong> (REST, GraphQL, gRPC, SOAP): synchronous, simple, needs the other side up right now. Best for lookups and user-driven actions.",
+    "<strong>Events / messaging</strong> (queues, pub/sub, webhooks): asynchronous, decoupled, tolerates downtime, but harder to reason about ordering and duplicates.",
+    "<strong>File / batch</strong> (CSV or XML drops, SFTP): universal and often the only option for legacy systems. High latency, needs validation and reconciliation.",
+    "<strong>Shared database / direct read</strong>: fastest to start, most fragile. Couples you to the other team's schema. Prefer read-only access to a replica or view.",
+    "Real projects mix styles: a nightly file for history, a webhook for changes, an API for lookups.",
+    "Decide by: latency needed, who owns the system, volume, what happens when either side is down, and how you'll detect a silent failure.",
+  ],
+  template: {
+    heading: "One task, four styles",
+    label: "python",
+    note: "'Get a customer to the other system' expressed as the shape of each integration (simulated).",
+    code: `# 1. API: call now, get an answer now
+def sync_via_api(post, customer):
+    return post("/customers", customer)              # blocks; caller sees success/failure
+
+# 2. Event: publish and move on; a consumer does the work later
+def sync_via_event(publish, customer):
+    publish("customer.updated", customer)             # returns immediately
+
+# 3. File: append to a batch that a scheduled job ships
+def sync_via_file(rows, customer):
+    rows.append(customer)                              # shipped at 02:00 tonight
+
+# 4. Database: write straight into the other system's table (fragile)
+def sync_via_db(conn, customer):
+    conn.execute("INSERT INTO crm_customers VALUES (?, ?)", (customer["id"], customer["name"]))`,
+  },
+  examples: [
+    {
+      title: "Choosing a style: a small decision helper",
+      prompt: "Encode the trade-offs as questions. This isn't production logic; it's a way to make the reasoning explicit in a design discussion.",
+      code: `def suggest_style(needs_immediate_answer, other_side_reliable, volume_per_day, legacy_only_files):
+    if legacy_only_files:
+        return "file/batch"
+    if needs_immediate_answer and other_side_reliable:
+        return "request/response API"
+    if volume_per_day > 100_000 or not other_side_reliable:
+        return "events/messaging"
+    return "request/response API"
+
+print(suggest_style(True, True, 500, False))
+print(suggest_style(False, False, 50, False))
+print(suggest_style(False, True, 10, True))`,
+      explanation: "Notice what dominates: reliability of the other side and whether an immediate answer is required. If you can't get an immediate answer from a system that is often down, a synchronous API will make your product as unreliable as their system.",
+      output: "request/response API / events/messaging / file/batch",
+    },
+    {
+      title: "Reconciliation: how you know an integration is healthy",
+      prompt: "Whatever the style, compare what should have arrived with what did. Silent data loss is the worst failure mode.",
+      code: `def reconcile(source_ids, target_ids):
+    source, target = set(source_ids), set(target_ids)
+    return {
+        "missing_in_target": sorted(source - target),
+        "unexpected_in_target": sorted(target - source),
+        "matched": len(source & target),
+    }
+
+print(reconcile([1, 2, 3, 4], [1, 2, 4, 9]))`,
+      explanation: "A scheduled reconciliation job (count, ID diff, or checksum) catches dropped messages, failed batches, and one-sided deletes that no error log will show. Build it early; customers will ask 'how do we know it's all there?'",
+      output: "{'missing_in_target': [3], 'unexpected_in_target': [9], 'matched': 3}",
+    },
+  ],
+  gotchas: [
+    "Choosing the fashionable style (events) when the customer's system only supports SFTP. Start from their constraints.",
+    "Direct database access without agreement: schema changes break you silently, and you may violate the customer's policies.",
+    "No reconciliation. Integrations fail quietly; you need a way to prove completeness.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "For three real systems you know (CRM, ERP, payments), decide which style fits each and write down why.",
+    "Sketch how a nightly file plus a webhook could work together for the same customer data.",
+    "Extend <code>reconcile</code> to also compare a checksum of a few fields per record.",
+  ],
+  quiz: [
+    {
+      question: "Which style tolerates the other system being temporarily down?",
+      options: [
+        "Events/messaging (queued delivery)",
+        "Synchronous request/response",
+        "Direct database read",
+        "All equally",
+      ],
+      correct: 0,
+      explanation: "Queues buffer messages until the consumer or provider recovers.",
+    },
+    {
+      question: "When is file/batch integration often the right answer?",
+      options: [
+        "When a legacy system only exposes file exports/imports",
+        "Always, it is the fastest",
+        "Only for real-time needs",
+        "Never",
+      ],
+      correct: 0,
+      explanation: "It is universal. Legacy systems commonly support little else.",
+    },
+    {
+      question: "What is the main risk of integrating through another team's database?",
+      options: [
+        "Coupling to their schema, so changes break you silently",
+        "It is slower than any API",
+        "SQL is deprecated",
+        "Databases can't be read remotely",
+      ],
+      correct: 0,
+      explanation: "The schema isn't a contract; it can change without notice.",
+    },
+    {
+      question: "What does reconciliation provide?",
+      options: [
+        "Evidence that data arrived completely and correctly",
+        "Faster network calls",
+        "Automatic retries",
+        "Encryption",
+      ],
+      correct: 0,
+      explanation: "Comparing source and target catches silent loss or duplication.",
+    },
+    {
+      question: "Why might a synchronous API make your product less reliable?",
+      options: [
+        "Your uptime becomes bounded by the other system's uptime",
+        "APIs use more memory",
+        "APIs can't be retried",
+        "HTTP is insecure",
+      ],
+      correct: 0,
+      explanation: "If every user action waits on a flaky dependency, its outages become yours.",
+    },
+  ],
+  id: "integration-styles",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

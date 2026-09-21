@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Builder — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html" class="active">Patterns</a>
+      <a href="../integration/index.html">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Builder constructs a complex object step by step, so callers don't need giant constructors or telescoping overloads. Requests, queries, reports, and configuration objects with many optional parts are typical candidates.",
+  keyHeading: "When to use it, and the Pythonic take",
+  keyPoints: [
+    "Use when an object has many optional parts, or must be validated before it's considered complete.",
+    "Java: nested Builder class, fluent setters, <code>build()</code>. Python: <strong>keyword arguments with defaults</strong> cover most cases already.",
+    "A frozen <code>@dataclass</code> plus <code>dataclasses.replace()</code> gives immutable 'builder-like' updates.",
+    "Use a real builder when construction is multi-step, order-dependent, or needs validation at <code>build()</code> time (for example, assembling an HTTP request or SQL query).",
+  ],
+  template: {
+    heading: "First try: keyword arguments and a dataclass",
+    label: "python",
+    note: "Before writing a Builder class, check whether this is enough.",
+    code: `from dataclasses import dataclass, replace
+
+@dataclass(frozen=True)
+class Request:
+    url: str
+    method: str = "GET"
+    timeout: float = 10.0
+    retries: int = 3
+
+base = Request("https://api.example.com/items")
+slow = replace(base, timeout=60.0, retries=5)   # new object, base untouched
+print(base.timeout, slow.timeout)`,
+  },
+  examples: [
+    {
+      title: "Fluent builder with validation",
+      prompt: "Assemble a query step by step and validate it when <code>build()</code> is called.",
+      code: `class QueryBuilder:
+    def __init__(self, table):
+        self._table = table
+        self._where = []
+        self._limit = None
+
+    def where(self, cond):
+        self._where.append(cond)
+        return self                      # return self so calls chain
+
+    def limit(self, n):
+        self._limit = n
+        return self
+
+    def build(self):
+        if self._limit is not None and self._limit <= 0:
+            raise ValueError("limit must be positive")
+        sql = f"SELECT * FROM {self._table}"
+        if self._where:
+            sql += " WHERE " + " AND ".join(self._where)
+        if self._limit is not None:
+            sql += f" LIMIT {self._limit}"
+        return sql
+
+q = QueryBuilder("orders").where("status = 'open'").where("total > 100").limit(10).build()
+print(q)`,
+      explanation: "Each method mutates the builder and returns <code>self</code>, enabling chaining. <code>build()</code> is the single place to validate and produce the final value. (Note: this demo interpolates raw strings. Real code must use parameterized queries to avoid SQL injection.)",
+      output: "SELECT * FROM orders WHERE status = 'open' AND total > 100 LIMIT 10",
+    },
+    {
+      title: "Building an immutable result",
+      prompt: "Keep the builder mutable but have <code>build()</code> return a frozen object so the product can't be changed afterwards.",
+      code: `from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class Report:
+    title: str
+    sections: tuple
+
+class ReportBuilder:
+    def __init__(self, title):
+        self.title = title
+        self.sections = []
+
+    def add(self, text):
+        self.sections.append(text)
+        return self
+
+    def build(self):
+        return Report(self.title, tuple(self.sections))   # tuple: immutable snapshot
+
+r = ReportBuilder("Q3").add("Intro").add("Numbers").build()
+print(r)`,
+      explanation: "Converting the list to a tuple at <code>build()</code> means later changes to the builder can't corrupt an already-built report.",
+      output: "Report(title='Q3', sections=('Intro', 'Numbers'))",
+    },
+  ],
+  gotchas: [
+    "Using a builder where keyword arguments would do. Extra classes with no extra value are noise.",
+    "Reusing one builder for two products: state from the first leaks into the second. Create a new builder or reset.",
+    "String-built SQL is injection-prone. Builders that emit SQL should produce parameterized queries.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Change <code>QueryBuilder</code> to return <code>(sql, params)</code> with placeholders instead of interpolated values.",
+    "Add an <code>order_by()</code> step and validate that the column is in an allow-list.",
+    "Rewrite the report example with <code>dataclasses.replace</code> instead of a builder.",
+  ],
+  quiz: [
+    {
+      question: "When is a Builder worth it in Python?",
+      options: [
+        "When construction is multi-step, order-dependent, or needs validation at the end",
+        "Whenever a class has an __init__",
+        "Only for immutable objects",
+        "Never",
+      ],
+      correct: 0,
+      explanation: "Keyword arguments cover simple cases; builders help with staged construction and final validation.",
+    },
+    {
+      question: "What makes a fluent interface chainable?",
+      options: [
+        "Each method returns self",
+        "Each method returns None",
+        "Methods are static",
+        "Using global state",
+      ],
+      correct: 0,
+      explanation: "Returning the builder from every step lets calls be chained.",
+    },
+    {
+      question: "What does dataclasses.replace() give you?",
+      options: [
+        "A modified copy of a (possibly frozen) dataclass instance",
+        "A mutated original",
+        "A deep copy of the database",
+        "A new class",
+      ],
+      correct: 0,
+      explanation: "It creates a new instance with selected fields changed, leaving the original untouched.",
+    },
+    {
+      question: "Why convert a list to a tuple in build()?",
+      options: [
+        "To make the built product an immutable snapshot, isolated from the builder",
+        "Tuples are faster to print",
+        "Lists can't be stored in dataclasses",
+        "It is required by Python",
+      ],
+      correct: 0,
+      explanation: "The product can't be changed later by mutating the builder's list.",
+    },
+    {
+      question: "What is the risk of building SQL by string concatenation?",
+      options: [
+        "SQL injection",
+        "Slower Python",
+        "Syntax errors in Python",
+        "Losing type hints",
+      ],
+      correct: 0,
+      explanation: "Untrusted values inside SQL text can change the query. Use parameters.",
+    },
+  ],
+  id: "builder",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

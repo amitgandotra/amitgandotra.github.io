@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calling REST APIs Reliably — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html">Patterns</a>
+      <a href="../integration/index.html" class="active">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Calling someone else's API is easy in a demo and hard in production. Networks time out, servers return 429 and 503, and result sets span hundreds of pages. A reliable client sets timeouts, retries only what is safe, follows pagination, and respects rate limits.",
+  keyHeading: "What a production-grade client does",
+  keyPoints: [
+    "<strong>Always set a timeout.</strong> Python's <code>requests</code> has none by default; a hung server hangs your program forever.",
+    "<strong>Retry selectively</strong>: network errors, 429, and 5xx. Not 400/401/403/404 (retrying won't fix them).",
+    "<strong>Only retry safe or idempotent calls</strong> (GET, PUT, DELETE, or POST with an idempotency key). See Resilience.",
+    "<strong>Respect 429</strong> and the <code>Retry-After</code> header instead of hammering.",
+    "<strong>Paginate</strong>: cursor/next-link pagination is more robust than page numbers when data changes underneath you.",
+    "Reuse a <code>Session</code> (connection pooling), and log status codes and durations.",
+  ],
+  template: {
+    heading: "requests with a timeout and retry adapter",
+    label: "python — needs `pip install requests`",
+    note: "Not run in this page (needs network); this is the shape to copy.",
+    code: `import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+def make_session():
+    session = requests.Session()
+    retry = Retry(
+        total=5,
+        backoff_factor=0.5,                       # 0.5s, 1s, 2s, ...
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET", "PUT", "DELETE"],  # not POST by default: not idempotent
+        respect_retry_after_header=True,
+    )
+    session.mount("https://", HTTPAdapter(max_retries=retry))
+    return session
+
+session = make_session()
+resp = session.get("https://api.example.com/orders", timeout=(3.05, 10))  # (connect, read)
+resp.raise_for_status()
+data = resp.json()`,
+  },
+  examples: [
+    {
+      title: "Cursor pagination as a generator",
+      prompt: "Hide pagination from callers: yield items across pages until there's no next cursor. (Uses a fake API so it runs anywhere.)",
+      code: `def fake_api(cursor=None):
+    pages = {
+        None: {"items": [1, 2, 3], "next": "c2"},
+        "c2": {"items": [4, 5, 6], "next": "c3"},
+        "c3": {"items": [7], "next": None},
+    }
+    return pages[cursor]
+
+def iter_items(fetch):
+    cursor = None
+    while True:
+        page = fetch(cursor)
+        yield from page["items"]
+        cursor = page["next"]
+        if cursor is None:
+            break
+
+print(list(iter_items(fake_api)))`,
+      explanation: "A generator keeps memory flat (one page at a time) and callers just write <code>for item in iter_items(...)</code>. Injecting <code>fetch</code> makes it testable and reusable for any API.",
+      output: "[1, 2, 3, 4, 5, 6, 7]",
+    },
+    {
+      title: "Honoring 429 and Retry-After",
+      prompt: "When a server says slow down, wait the time it asks for. (Simulated responses; sleep is injected so the demo is instant.)",
+      code: `class Resp:
+    def __init__(self, status, headers=None):
+        self.status_code, self.headers = status, headers or {}
+
+def get_with_backoff(send, max_attempts=4, sleep=lambda s: None):
+    waits = []
+    for attempt in range(1, max_attempts + 1):
+        resp = send()
+        if resp.status_code != 429:
+            return resp, waits
+        wait = float(resp.headers.get("Retry-After", 2 ** attempt))
+        waits.append(wait)
+        sleep(wait)
+    return resp, waits
+
+responses = iter([Resp(429, {"Retry-After": "3"}), Resp(429), Resp(200)])
+resp, waits = get_with_backoff(lambda: next(responses))
+print(resp.status_code, waits)`,
+      explanation: "The first 429 carries an explicit <code>Retry-After: 3</code>, so we wait 3s. The second has none, so we fall back to exponential backoff (2 ** attempt = 4s). Ignoring these signals can get your integration blocked.",
+      output: "200 [3.0, 4.0]",
+    },
+  ],
+  gotchas: [
+    "No timeout: one stuck connection freezes a worker indefinitely.",
+    "Retrying POST blindly can create duplicate records. Use idempotency keys.",
+    "Offset pagination while data is being inserted skips or repeats records. Prefer cursors.",
+    "Ignoring <code>Retry-After</code> and retrying immediately makes throttling worse.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Add a maximum total wait to <code>get_with_backoff</code> so it can't sleep for minutes.",
+    "Extend <code>iter_items</code> to stop after N items without fetching extra pages.",
+    "Write a test that feeds <code>get_with_backoff</code> a 500 then a 200 and asserts two calls.",
+  ],
+  quiz: [
+    {
+      question: "What is the default timeout in Python's requests library?",
+      options: [
+        "None: it waits indefinitely unless you set one",
+        "5 seconds",
+        "30 seconds",
+        "60 seconds",
+      ],
+      correct: 0,
+      explanation: "requests will wait forever by default, so always pass timeout=.",
+    },
+    {
+      question: "Which status codes are usually worth retrying?",
+      options: [
+        "429 and 5xx (plus network errors)",
+        "400 and 404",
+        "401 and 403",
+        "All of them",
+      ],
+      correct: 0,
+      explanation: "Those are transient. Client errors like 400/404 will fail the same way again.",
+    },
+    {
+      question: "Why is cursor pagination preferred over page numbers?",
+      options: [
+        "It stays correct when records are added or removed during traversal",
+        "It's always faster on the client",
+        "It avoids JSON",
+        "It works without HTTP",
+      ],
+      correct: 0,
+      explanation: "Offsets shift as data changes; cursors mark a stable position.",
+    },
+    {
+      question: "What should a client do on a 429 with Retry-After?",
+      options: [
+        "Wait at least the requested time before retrying",
+        "Retry immediately",
+        "Give up permanently",
+        "Switch to POST",
+      ],
+      correct: 0,
+      explanation: "The header tells you exactly how long the server wants you to back off.",
+    },
+    {
+      question: "Why write pagination as a generator?",
+      options: [
+        "Callers iterate items simply, and memory stays bounded to one page",
+        "Generators are required by HTTP",
+        "It's the only way to call APIs",
+        "It makes calls parallel",
+      ],
+      correct: 0,
+      explanation: "yield hides page boundaries and streams results lazily.",
+    },
+  ],
+  id: "rest-clients",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

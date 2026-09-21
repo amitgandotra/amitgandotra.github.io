@@ -11,11 +11,6 @@
 <header class="site-header">
   <div class="container">
     <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
-    <nav class="site-nav">
-      <a href="../python/index.html">Python</a>
-      <a href="index.html" class="active">DSA</a>
-      <a href="../../index.html">All Topics</a>
-    </nav>
   </div>
 </header>
 
@@ -35,9 +30,9 @@
   <div class="container">Becoming FDE — build in public, ship in prod.</div>
 </footer>
 
-<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/data/site.js"></script>
 <script src="../../js/progress.js"></script>
-<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/site-shell.js"></script>
 <script src="../../js/highlight.js"></script>
 <script src="../../js/quiz.js"></script>
 <script>
@@ -99,33 +94,65 @@ const PAGE_DATA = {
     },
   ],
   practiceProblems: [
-    "Jump Game",
-    "Jump Game II",
-    "Gas Station",
-    "Hand of Straights",
-    "Merge Triplets to Form Target Triplet",
-    "Partition Labels",
+    {
+      n: 455,
+      title: "Assign Cookies",
+      slug: "assign-cookies",
+      level: "Easy",
+    },
+    {
+      n: 53,
+      title: "Maximum Subarray",
+      slug: "maximum-subarray",
+      level: "Medium",
+    },
+    {
+      n: 55,
+      title: "Jump Game",
+      slug: "jump-game",
+      level: "Medium",
+    },
+    {
+      n: 45,
+      title: "Jump Game II",
+      slug: "jump-game-ii",
+      level: "Medium",
+    },
+    {
+      n: 134,
+      title: "Gas Station",
+      slug: "gas-station",
+      level: "Medium",
+    },
+    {
+      n: 763,
+      title: "Partition Labels",
+      slug: "partition-labels",
+      level: "Medium",
+    },
+    {
+      n: 846,
+      title: "Hand of Straights",
+      slug: "hand-of-straights",
+      level: "Medium",
+    },
+    {
+      n: 621,
+      title: "Task Scheduler",
+      slug: "task-scheduler",
+      level: "Medium",
+    },
   ],
   quiz: [
     {
       question: "Greedy algorithms work correctly only when the problem has...",
-      options: [
-        "The greedy-choice property and optimal substructure",
-        "Any arbitrary structure",
-        "Negative weights",
-        "A 2-D DP table",
-      ],
+      options: ["The greedy-choice property and optimal substructure", "Any arbitrary structure", "Negative weights", "A 2-D DP table"],
       correct: 0,
       explanation: "Without both properties, choosing the locally best option at each step doesn't guarantee a globally optimal result.",
     },
     {
       question: "What's the risk of applying a greedy approach without proving it's correct?",
-      options: [
-        "It can silently produce a wrong answer that looks plausible, unlike DP which explores all options",
-        "It will always throw a runtime error",
-        "It always produces the same result as DP",
-        "There is no risk — greedy always works",
-      ],
+      options: ["It can silently produce a wrong answer that looks plausible, unlike DP which explores all options", "It will always throw a runtime error", "It always produces the same result as DP", "There is no risk — greedy always works"],
       correct: 0,
       explanation: "An unproven greedy strategy can pass simple test cases while being wrong in general, which is what makes greedy risky compared to exhaustive DP.",
     },
@@ -142,29 +169,19 @@ const PAGE_DATA = {
     },
     {
       question: "In Jump Game II, what does curr_end represent during the scan?",
-      options: [
-        "The farthest index reachable using the jumps taken so far",
-        "The final index of the array",
-        "The current loop index i",
-        "The total number of jumps made",
-      ],
+      options: ["The farthest index reachable using the jumps taken so far", "The final index of the array", "The current loop index i", "The total number of jumps made"],
       correct: 0,
       explanation: "It's the boundary of the current 'jump level' — crossing it forces the count of jumps to increment.",
     },
     {
       question: "Compared to DP, what's the main advantage of a correct greedy solution?",
-      options: [
-        "Typically much lower time complexity (often O(n) or O(n log n)), since it never explores alternate branches",
-        "It always uses more memory than DP",
-        "It's harder to prove correct but runs slower",
-        "There is no real advantage",
-      ],
+      options: ["Typically much lower time complexity (often O(n) or O(n log n)), since it never explores alternate branches", "It always uses more memory than DP", "It's harder to prove correct but runs slower", "There is no real advantage"],
       correct: 0,
       explanation: "Greedy makes one pass with one irrevocable choice per step, avoiding the exploration of multiple branches that DP requires.",
     },
   ],
 };
 </script>
-<script src="../../js/pattern-page.js"></script>
+<script src="../../js/topic-page.js"></script>
 </body>
 </html>

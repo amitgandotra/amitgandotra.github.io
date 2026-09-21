@@ -9,6 +9,25 @@ function initQuiz({ containerId, questions, topicId, patternId }) {
   let answered = false;
   const picks = new Array(questions.length).fill(null);
 
+  // Authors tend to put the right answer first, so shuffle option order on every
+  // attempt. Questions whose options refer to each other ("both of the above",
+  // "neither") keep their written order so they still make sense.
+  const POSITIONAL = /\b(above|both|all of|none of|neither)\b/i;
+  let view = buildView();
+
+  function buildView() {
+    return questions.map((q) => {
+      const order = q.options.map((_, i) => i);
+      if (!q.options.some((o) => POSITIONAL.test(o))) {
+        for (let i = order.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [order[i], order[j]] = [order[j], order[i]];
+        }
+      }
+      return { options: order.map((i) => q.options[i]), correct: order.indexOf(q.correct) };
+    });
+  }
+
   render();
 
   function render() {
@@ -17,6 +36,7 @@ function initQuiz({ containerId, questions, topicId, patternId }) {
       return;
     }
     const q = questions[index];
+    const v = view[index];
     answered = picks[index] !== null;
     const pct = Math.round((index / questions.length) * 100);
 
@@ -25,7 +45,7 @@ function initQuiz({ containerId, questions, topicId, patternId }) {
       <div class="quiz-progress">Question ${index + 1} of ${questions.length}</div>
       <div class="quiz-question">${q.question}</div>
       <div class="quiz-options">
-        ${q.options
+        ${v.options
           .map(
             (opt, i) => `<button class="quiz-option" data-i="${i}">${opt}</button>`
           )
@@ -48,13 +68,13 @@ function initQuiz({ containerId, questions, topicId, patternId }) {
         if (picks[index] !== null) return; // already answered
         const chosen = parseInt(btn.dataset.i, 10);
         picks[index] = chosen;
-        const correct = chosen === q.correct;
+        const correct = chosen === v.correct;
         if (correct) score++;
 
         optionEls.forEach((b) => (b.disabled = true));
         btn.classList.add(correct ? "correct" : "incorrect");
         if (!correct) {
-          optionEls[q.correct].classList.add("reveal");
+          optionEls[v.correct].classList.add("reveal");
         }
 
         feedback.classList.add("show", correct ? "is-correct" : "is-incorrect");
@@ -95,6 +115,7 @@ function initQuiz({ containerId, questions, topicId, patternId }) {
       index = 0;
       score = 0;
       picks.fill(null);
+      view = buildView();
       render();
     });
 

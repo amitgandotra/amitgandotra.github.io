@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prefix Sum — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "prefix-sum",
+  summary: "A prefix sum stores running totals, so the sum of any range is one subtraction. Combined with a hash map of earlier prefix values, it also answers 'how many subarrays add up to k?' in a single pass, even when the array has negative numbers.",
+  recognize: [
+    "Many <strong>range-sum queries</strong> on a fixed array",
+    "'Subarray sum equals k' or 'count subarrays with a property' (works with negatives, where a sliding window does not)",
+    "'Product of all elements except self', running totals, pivot/balance problems",
+    "A property that can be turned into a running sum: equal 0s and 1s (treat 0 as -1), divisible by k (prefix modulo k)",
+    "Grids with many rectangle-sum queries (2-D prefix sums)",
+  ],
+  template: {
+    note: "Build once in O(n); answer every range query in O(1).",
+    code: `from itertools import accumulate
+
+def build_prefix(nums):
+    return [0] + list(accumulate(nums))      # prefix[i] = sum(nums[:i])
+
+def range_sum(prefix, left, right):            # inclusive indexes
+    return prefix[right + 1] - prefix[left]
+
+nums = [3, 1, 4, 1, 5]
+prefix = build_prefix(nums)
+print(range_sum(prefix, 1, 3))    # 1 + 4 + 1 = 6`,
+  },
+  examples: [
+    {
+      title: "Subarray Sum Equals K",
+      prompt: "Count the <strong>contiguous subarrays</strong> whose sum equals <code>k</code>. The array may contain negative numbers.",
+      code: `def subarray_sum(nums, k):
+    count = 0
+    running = 0
+    seen = {0: 1}                       # prefix sum -> how many times it occurred
+    for x in nums:
+        running += x
+        count += seen.get(running - k, 0)     # an earlier prefix that leaves exactly k
+        seen[running] = seen.get(running, 0) + 1
+    return count`,
+      explanation: "A subarray between two prefixes sums to k when <code>prefix[j] - prefix[i] == k</code>, so for each running total look up how many earlier prefixes equal <code>running - k</code>. Seeding the map with <code>{0: 1}</code> counts subarrays that start at index 0. No window logic means negatives are fine.",
+      complexity: "Time: O(n) · Space: O(n)",
+      complexityWhy: "One pass, with an O(1) average dictionary lookup and update per element. The map holds at most n + 1 distinct prefix sums.",
+    },
+    {
+      title: "Product of Array Except Self",
+      prompt: "Return an array where each element is the <strong>product of all the others</strong>, without using division, in O(n).",
+      code: `def product_except_self(nums):
+    n = len(nums)
+    out = [1] * n
+    left = 1
+    for i in range(n):
+        out[i] = left                # product of everything to the left of i
+        left *= nums[i]
+    right = 1
+    for i in range(n - 1, -1, -1):
+        out[i] *= right              # multiply by the product of everything to the right
+        right *= nums[i]
+    return out`,
+      explanation: "This is a prefix-<em>product</em> pass followed by a suffix-product pass. Storing the left products in the output array and multiplying in the right products on the way back gives O(1) extra space besides the output.",
+      complexity: "Time: O(n) · Space: O(1) extra (excluding the output)",
+      complexityWhy: "Two linear passes with constant work per element. The only allocation is the output array itself.",
+    },
+  ],
+  gotchas: [
+    "Off-by-one when converting an inclusive range to prefix indexes. Use <code>prefix[right + 1] - prefix[left]</code>.",
+    "Forgetting to seed the hash map with the empty prefix (<code>{0: 1}</code>), which loses subarrays that start at index 0.",
+    "Prefix sums answer <em>sum</em> queries. For range minimum/maximum use a sparse table, segment tree, or monotonic deque.",
+    "If the array changes between queries, a static prefix array goes stale. Use a Fenwick tree or segment tree.",
+  ],
+  practiceProblems: [
+    {
+      n: 1480,
+      title: "Running Sum of 1d Array",
+      slug: "running-sum-of-1d-array",
+      level: "Easy",
+    },
+    {
+      n: 303,
+      title: "Range Sum Query - Immutable",
+      slug: "range-sum-query-immutable",
+      level: "Easy",
+    },
+    {
+      n: 724,
+      title: "Find Pivot Index",
+      slug: "find-pivot-index",
+      level: "Easy",
+    },
+    {
+      n: 238,
+      title: "Product of Array Except Self",
+      slug: "product-of-array-except-self",
+      level: "Medium",
+    },
+    {
+      n: 560,
+      title: "Subarray Sum Equals K",
+      slug: "subarray-sum-equals-k",
+      level: "Medium",
+    },
+    {
+      n: 525,
+      title: "Contiguous Array",
+      slug: "contiguous-array",
+      level: "Medium",
+    },
+    {
+      n: 974,
+      title: "Subarray Sums Divisible by K",
+      slug: "subarray-sums-divisible-by-k",
+      level: "Medium",
+    },
+  ],
+  quiz: [
+    {
+      question: "What does prefix[i] usually store?",
+      options: ["The sum of the first i elements (nums[:i])", "The sum of elements from i to the end", "The value nums[i]", "The maximum seen so far"],
+      correct: 0,
+      explanation: "With prefix[0] = 0, prefix[i] is the total of the first i elements, which makes range sums a subtraction.",
+    },
+    {
+      question: "With prefix[0] = 0, how do you get the sum of nums[left..right] (inclusive)?",
+      options: ["prefix[right + 1] - prefix[left]", "prefix[right] - prefix[left]", "prefix[right + 1] + prefix[left]", "prefix[left] - prefix[right]"],
+      correct: 0,
+      explanation: "prefix[right + 1] covers everything through right; subtracting prefix[left] removes everything before left.",
+    },
+    {
+      question: "Why does prefix sum plus a hash map work for 'subarray sum equals k' with negative numbers, when a sliding window does not?",
+      options: ["It only compares two prefix totals and never relies on the window sum growing or shrinking predictably", "It removes negative numbers first", "It sorts the array", "It only works when all numbers are positive"],
+      correct: 0,
+      explanation: "Sliding window shrinks when the sum is too big, which assumes adding elements only increases it. Negatives break that; prefix comparison does not care.",
+    },
+    {
+      question: "In Subarray Sum Equals K, why seed the map with {0: 1}?",
+      options: ["So subarrays that start at index 0 are counted (their earlier prefix is the empty prefix, 0)", "To avoid division by zero", "To start the answer at 1", "It is a Python requirement"],
+      correct: 0,
+      explanation: "A subarray from index 0 has running == k, so it needs an earlier prefix of 0 to match running - k.",
+    },
+    {
+      question: "What are the time and space of the one-pass prefix-sum-plus-hash-map solution?",
+      options: ["O(n) time, O(n) space", "O(n^2) time, O(1) space", "O(n log n) time, O(n) space", "O(1) time, O(n) space"],
+      correct: 0,
+      explanation: "One pass with O(1) average dictionary work, storing up to n + 1 prefix sums.",
+    },
+  ],
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

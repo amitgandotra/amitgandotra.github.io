@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Union-Find — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "union-find",
+  summary: "Union-Find (disjoint set union) tracks which elements belong to the same group. It merges two groups and answers 'are these two connected?' in near-constant time using path compression and union by size. It shines when connections arrive one at a time.",
+  recognize: [
+    "'Are X and Y connected / in the same group?', asked repeatedly",
+    "<strong>Merge</strong> accounts, friends, sets, equivalent items",
+    "Counting components as edges are added; 'redundant connection' (the edge that closes a cycle)",
+    "Minimum spanning tree (Kruskal's algorithm)",
+    "Equality constraints such as <code>a == b</code> and <code>b != c</code>",
+  ],
+  template: {
+    note: "The standard DSU with path compression and union by size.",
+    code: `class DSU:
+    def __init__(self, n):
+        self.parent = list(range(n))
+        self.size = [1] * n
+        self.components = n
+
+    def find(self, x):
+        while self.parent[x] != x:
+            self.parent[x] = self.parent[self.parent[x]]    # path compression (halving)
+            x = self.parent[x]
+        return x
+
+    def union(self, a, b):
+        ra, rb = self.find(a), self.find(b)
+        if ra == rb:
+            return False                                     # already connected
+        if self.size[ra] < self.size[rb]:
+            ra, rb = rb, ra
+        self.parent[rb] = ra                                 # attach the smaller tree
+        self.size[ra] += self.size[rb]
+        self.components -= 1
+        return True`,
+  },
+  examples: [
+    {
+      title: "Redundant Connection",
+      prompt: "A tree had one extra edge added. Given the edges in order, return the edge that <strong>creates a cycle</strong>.",
+      code: `def find_redundant_connection(edges):
+    dsu = DSU(len(edges) + 1)
+    for a, b in edges:
+        if not dsu.union(a, b):        # a and b were already connected
+            return [a, b]
+    return []`,
+      explanation: "Add edges one by one. An edge whose endpoints are already in the same group would close a cycle, which is exactly the redundant one. <code>union</code> returns <code>False</code> in that case.",
+      complexity: "Time: O(E · α(V)) · Space: O(V)",
+      complexityWhy: "Each edge costs one union, which is near-constant amortised (α is the inverse Ackermann function, below 5 for any real input). The parent and size arrays hold one entry per vertex.",
+    },
+    {
+      title: "Satisfiability of Equality Equations",
+      prompt: "Given equations like <code>\"a==b\"</code> and <code>\"b!=c\"</code>, decide whether all can be true at once.",
+      code: `def equations_possible(equations):
+    parent = list(range(26))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for eq in equations:                       # first, union everything equal
+        if eq[1] == "=":
+            parent[find(ord(eq[0]) - 97)] = find(ord(eq[3]) - 97)
+    for eq in equations:                       # then check every inequality
+        if eq[1] == "!" and find(ord(eq[0]) - 97) == find(ord(eq[3]) - 97):
+            return False
+    return True`,
+      explanation: "Equality is transitive, so the <code>==</code> equations form groups. A <code>!=</code> equation is violated exactly when its two letters ended up in the same group. Do all unions first, then all checks.",
+      complexity: "Time: O(n · α(26)) ≈ O(n) · Space: O(1)",
+      complexityWhy: "Each equation triggers a constant number of find operations on a 26-element structure. The parent array has a fixed size of 26.",
+    },
+  ],
+  gotchas: [
+    "Forgetting path compression or union by size, which can make <code>find</code> O(n) on a long chain.",
+    "Comparing <code>parent[a] == parent[b]</code> instead of <code>find(a) == find(b)</code>. Parents are not roots until compressed.",
+    "Using Union-Find when a single DFS/BFS is enough. If the graph is static and you only need components once, DFS is simpler.",
+    "In Kruskal's algorithm, sort edges by weight first and stop after <code>n - 1</code> useful unions.",
+  ],
+  practiceProblems: [
+    {
+      n: 547,
+      title: "Number of Provinces",
+      slug: "number-of-provinces",
+      level: "Medium",
+    },
+    {
+      n: 684,
+      title: "Redundant Connection",
+      slug: "redundant-connection",
+      level: "Medium",
+    },
+    {
+      n: 990,
+      title: "Satisfiability of Equality Equations",
+      slug: "satisfiability-of-equality-equations",
+      level: "Medium",
+    },
+    {
+      n: 721,
+      title: "Accounts Merge",
+      slug: "accounts-merge",
+      level: "Medium",
+    },
+    {
+      n: 1584,
+      title: "Min Cost to Connect All Points",
+      slug: "min-cost-to-connect-all-points",
+      level: "Medium",
+    },
+    {
+      n: 323,
+      title: "Number of Connected Components in an Undirected Graph",
+      slug: "number-of-connected-components-in-an-undirected-graph",
+      level: "Medium",
+      premium: true,
+    },
+  ],
+  quiz: [
+    {
+      question: "What two operations does a Union-Find structure provide?",
+      options: ["find (which group is x in?) and union (merge two groups)", "push and pop", "insert and delete-min", "lookup and rehash"],
+      correct: 0,
+      explanation: "Everything else (connectivity, component counts, cycles) is built from those two.",
+    },
+    {
+      question: "What does path compression do?",
+      options: ["Makes nodes point closer to the root during find, keeping later finds fast", "Compresses the input file", "Removes cycles from the graph", "Sorts the parent array"],
+      correct: 0,
+      explanation: "Flattening the trees keeps their height tiny, so operations are near-constant amortised.",
+    },
+    {
+      question: "Why does union by size help?",
+      options: ["Attaching the smaller tree under the larger keeps trees shallow", "It makes union commutative", "It avoids using find", "It reduces memory to O(1)"],
+      correct: 0,
+      explanation: "Shallower trees mean shorter find paths.",
+    },
+    {
+      question: "How does Kruskal's minimum spanning tree algorithm use Union-Find?",
+      options: ["It accepts the next cheapest edge only if its endpoints are in different groups", "It finds the shortest path", "It sorts the vertices", "It counts leaves"],
+      correct: 0,
+      explanation: "Union-Find checks in near-constant time whether an edge would create a cycle.",
+    },
+    {
+      question: "When is a plain DFS a better choice than Union-Find?",
+      options: ["The graph is fixed and you only need the components once", "Edges arrive one at a time", "You need repeated connectivity queries as edges are added", "You need to detect a redundant edge online"],
+      correct: 0,
+      explanation: "Union-Find pays off for dynamic connectivity; for a one-off static count DFS is simpler.",
+    },
+  ],
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

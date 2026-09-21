@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Command — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html" class="active">Patterns</a>
+      <a href="../integration/index.html">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Command turns an action into an object (or callable) that can be stored, queued, logged, retried, or undone. Job queues, undo stacks, audit trails, and scheduled tasks all rely on it.",
+  keyHeading: "When to use it, and the Pythonic take",
+  keyPoints: [
+    "Use when you need to defer execution, queue work, record what happened, or support undo/redo.",
+    "Java: Command interface with <code>execute()</code>. Python: a <strong>callable</strong>, <code>functools.partial</code>, or a small class with <code>execute()</code>/<code>undo()</code>.",
+    "Commands should carry everything needed to run (their arguments), so they can be executed later, elsewhere, or twice.",
+    "Serializable commands (name + JSON args) are the basis of job queues and audit logs.",
+  ],
+  template: {
+    heading: "Command with undo",
+    label: "python",
+    note: "Each command knows how to do and undo one thing.",
+    code: `class AddItem:
+    def __init__(self, cart, item):
+        self.cart, self.item = cart, item
+    def execute(self):
+        self.cart.append(self.item)
+    def undo(self):
+        self.cart.remove(self.item)
+
+cart, history = [], []
+for item in ("book", "pen"):
+    cmd = AddItem(cart, item)
+    cmd.execute()
+    history.append(cmd)
+
+history.pop().undo()
+print(cart)`,
+  },
+  examples: [
+    {
+      title: "Queued commands with functools.partial",
+      prompt: "Bind arguments now, run later. No class required.",
+      code: `from functools import partial
+
+def send_email(to, subject):
+    return f"mail to {to}: {subject}"
+
+queue = [
+    partial(send_email, "a@x.com", "Welcome"),
+    partial(send_email, "b@x.com", "Invoice"),
+]
+
+results = [job() for job in queue]      # execute later, in order
+print(results)`,
+      explanation: "<code>partial</code> packages the function with its arguments into a zero-argument callable. That's the Command pattern: the request is now an object you can put in a list, delay, or retry.",
+      output: "['mail to a@x.com: Welcome', 'mail to b@x.com: Invoice']",
+    },
+    {
+      title: "Serializable command log",
+      prompt: "Store commands as data (name + args) so they survive restarts and can be replayed.",
+      code: `import json
+
+HANDLERS = {
+    "set_status": lambda db, id, status: db.__setitem__(id, status),
+}
+
+def run(db, cmd):
+    HANDLERS[cmd["name"]](db, *cmd["args"])
+
+log = [{"name": "set_status", "args": [1, "shipped"]},
+       {"name": "set_status", "args": [2, "pending"]}]
+
+saved = json.dumps(log)                  # persist this
+db = {}
+for cmd in json.loads(saved):            # replay later
+    run(db, cmd)
+print(db)`,
+      explanation: "Because each command is plain data plus a registry of handlers, you can write it to a queue or file and replay it after a crash. This is how job systems and event-sourced audit logs work.",
+      output: "{1: 'shipped', 2: 'pending'}",
+    },
+  ],
+  gotchas: [
+    "Commands that capture live objects (connections, open files) can't be serialized or run elsewhere. Capture IDs and re-fetch.",
+    "Undo is only valid if execute stored what it needs (previous value). Design for it up front.",
+    "Non-idempotent commands replayed after a failure can double-apply. See Enterprise Integration → Resilience.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Add a <code>RemoveItem</code> command with undo that restores the item at its original index.",
+    "Add a redo stack to the cart example.",
+    "Make the JSON command log reject unknown command names with a clear error.",
+  ],
+  quiz: [
+    {
+      question: "What does the Command pattern do?",
+      options: [
+        "Represents a request as an object that can be queued, logged, retried, or undone",
+        "Ensures one instance",
+        "Adapts an interface",
+        "Observes state changes",
+      ],
+      correct: 0,
+      explanation: "Making the action a value lets you treat it like data.",
+    },
+    {
+      question: "How does functools.partial relate to Command?",
+      options: [
+        "It binds arguments to a function, producing a deferred, ready-to-run callable",
+        "It replaces classes entirely in all cases",
+        "It creates threads",
+        "It caches results",
+      ],
+      correct: 0,
+      explanation: "A partial is effectively a lightweight command: function plus arguments, run later.",
+    },
+    {
+      question: "What is needed to support undo?",
+      options: [
+        "The command must save enough state (e.g. the previous value) when it executes",
+        "A second thread",
+        "A singleton",
+        "A decorator",
+      ],
+      correct: 0,
+      explanation: "Undo can only reverse what was recorded.",
+    },
+    {
+      question: "Why store commands as plain data (name + args)?",
+      options: [
+        "They can be persisted, queued across services, and replayed",
+        "It's faster to type",
+        "Python requires it",
+        "It hides bugs",
+      ],
+      correct: 0,
+      explanation: "Data is serializable; live objects usually aren't.",
+    },
+    {
+      question: "What risk exists when replaying commands after a failure?",
+      options: [
+        "Non-idempotent commands may apply twice",
+        "The commands are deleted",
+        "Python raises SyntaxError",
+        "The queue grows smaller",
+      ],
+      correct: 0,
+      explanation: "Replays need idempotency or de-duplication.",
+    },
+  ],
+  id: "command",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

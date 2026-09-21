@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Combining Patterns — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "combining-patterns",
+  summary: "Real problems rarely use one pattern in isolation. A common shape is a 'wrapper' pattern that organises the search (binary search, DFS, sliding window) around a smaller 'engine' (a greedy check, memoisation, a hash map, a trie). This lesson shows how to spot when one pattern leaves a sub-problem that another one solves.",
+  recognize: [
+    "The first pattern gives you a search space, but you still need a <strong>feasibility check</strong> (binary search + greedy)",
+    "A DFS revisits the same states over and over (DFS + memoisation)",
+    "Intervals or ranges combined with running counts (intervals + prefix sums / a difference array)",
+    "A window whose validity depends on counts (sliding window + frequency counting)",
+    "Many words to find in a grid (trie + backtracking)",
+  ],
+  template: {
+    heading: "A reusable skeleton: search on the answer",
+    note: "Binary search over the answer, with a problem-specific feasibility check. Many hard problems reduce to writing <code>feasible</code>.",
+    code: `def min_feasible(lo, hi, feasible):
+    """Smallest value in [lo, hi] for which feasible(value) is True (monotonic)."""
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if feasible(mid):
+            hi = mid              # mid works: try smaller
+        else:
+            lo = mid + 1          # mid fails: need larger
+    return lo`,
+  },
+  examples: [
+    {
+      title: "Binary Search + Greedy: Capacity To Ship Packages Within D Days",
+      prompt: "Packages must ship <strong>in order</strong>. Find the <strong>least ship capacity</strong> that delivers everything within <code>days</code>.",
+      code: `def ship_within_days(weights, days):
+    def feasible(capacity):                  # greedy check: pack as much as fits each day
+        used, load = 1, 0
+        for w in weights:
+            if load + w > capacity:
+                used += 1
+                load = 0
+            load += w
+        return used <= days
+
+    lo, hi = max(weights), sum(weights)      # answer lies between the heaviest package and everything at once
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if feasible(mid):
+            hi = mid
+        else:
+            lo = mid + 1
+    return lo`,
+      explanation: "If capacity <em>c</em> works, any larger capacity works too, so the answer space is monotonic: binary search it. Each probe needs a check, and the check is a simple greedy loop. Two patterns, each trivial on its own.",
+      complexity: "Time: O(n log(sum − max)) · Space: O(1)",
+      complexityWhy: "The binary search takes about log(sum − max) probes, and each probe is one linear pass over the packages.",
+    },
+    {
+      title: "DFS + Memoisation: Longest Increasing Path in a Matrix",
+      prompt: "Find the length of the <strong>longest strictly increasing path</strong> in a grid, moving in four directions.",
+      code: `from functools import lru_cache
+
+def longest_increasing_path(matrix):
+    rows, cols = len(matrix), len(matrix[0])
+
+    @lru_cache(maxsize=None)
+    def dfs(r, c):                               # longest path starting at (r, c)
+        best = 1
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < rows and 0 <= nc < cols and matrix[nr][nc] > matrix[r][c]:
+                best = max(best, 1 + dfs(nr, nc))
+        return best
+
+    return max(dfs(r, c) for r in range(rows) for c in range(cols))`,
+      explanation: "A path only moves to <em>larger</em> values, so it can never cycle. That means no visited set is needed, and the answer from each cell depends only on that cell. Memoising it turns exponential DFS into one visit per cell.",
+      complexity: "Time: O(rows × cols) · Space: O(rows × cols)",
+      complexityWhy: "Each cell's result is computed once and cached, with a constant amount of work (four neighbours) per cell. The cache and recursion stack are each up to rows × cols.",
+    },
+    {
+      title: "Intervals + Prefix Sums: Car Pooling",
+      prompt: "Each trip is <code>[passengers, start, end]</code> along a road. Can a car of the given <strong>capacity</strong> serve all trips without ever exceeding it?",
+      code: `def car_pooling(trips, capacity):
+    delta = [0] * 1001                     # difference array over road positions
+    for passengers, start, end in trips:
+        delta[start] += passengers         # they get on here
+        delta[end] -= passengers           # and off here (not counted at 'end')
+    load = 0
+    for change in delta:
+        load += change                     # a running sum gives the load at each position
+        if load > capacity:
+            return False
+    return True`,
+      explanation: "Each trip is an interval. Instead of adding passengers to every position in the interval, record only the change at the start and the end, then take a running sum. That is a difference array followed by a prefix sum.",
+      complexity: "Time: O(n + M) · Space: O(M), where M is the road length",
+      complexityWhy: "Each trip does two constant-time updates, then one pass over M positions. The difference array has M + 1 entries.",
+    },
+    {
+      title: "Sliding Window + Counting: Longest Repeating Character Replacement",
+      prompt: "You may change at most <code>k</code> characters. Return the length of the <strong>longest substring</strong> that can become all one letter.",
+      code: `from collections import Counter
+
+def character_replacement(s, k):
+    counts = Counter()
+    left = best = max_freq = 0
+    for right, ch in enumerate(s):
+        counts[ch] += 1
+        max_freq = max(max_freq, counts[ch])            # most common letter in the window (never lowered)
+        while (right - left + 1) - max_freq > k:        # more than k letters need changing: shrink
+            counts[s[left]] -= 1
+            left += 1
+        best = max(best, right - left + 1)
+    return best`,
+      explanation: "The window is valid when <code>length − (count of its most common letter) ≤ k</code>. The sliding window provides the range; frequency counting provides the validity test. Not lowering <code>max_freq</code> on shrink is safe, because only a larger frequency can improve the answer.",
+      complexity: "Time: O(n) · Space: O(alphabet)",
+      complexityWhy: "Both window ends move forward only, so there are at most 2n pointer moves. The counter holds at most one entry per distinct letter.",
+    },
+    {
+      title: "Trie + Backtracking: Word Search II",
+      prompt: "Given a board of letters and a list of words, return every word that can be traced through <strong>adjacent cells</strong> (each cell used at most once per word).",
+      code: `def find_words(board, words):
+    trie = {}
+    for w in words:
+        node = trie
+        for ch in w:
+            node = node.setdefault(ch, {})
+        node["$"] = w                          # store the word at its end node
+
+    rows, cols = len(board), len(board[0])
+    found = []
+
+    def dfs(r, c, node):
+        ch = board[r][c]
+        nxt = node.get(ch)
+        if not nxt:
+            return                             # no word continues with this letter: prune
+        if "$" in nxt:
+            found.append(nxt.pop("$"))         # pop so each word is reported once
+        board[r][c] = "#"                      # choose
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < rows and 0 <= nc < cols and board[nr][nc] != "#":
+                dfs(nr, nc, nxt)               # explore
+        board[r][c] = ch                       # unchoose
+
+    for r in range(rows):
+        for c in range(cols):
+            dfs(r, c, trie)
+    return found`,
+      explanation: "Searching for each word separately repeats work. A trie of all words lets one backtracking pass follow only paths that are a prefix of some word, and it finds all words together. Pruning on a missing trie branch is what makes it fast.",
+      complexity: "Time: O(rows × cols × 4 × 3^(L−1)) worst case, in practice far less · Space: O(total word characters)",
+      complexityWhy: "From each start cell, a path of length L can branch into up to 3 new directions per step (not going back), but the trie prunes any path that does not prefix a word. The trie stores every word's characters.",
+    },
+  ],
+  gotchas: [
+    "Reaching for the wrapper pattern before defining the engine. Write the feasibility check or the recurrence first.",
+    "Assuming monotonicity for binary search on the answer. Check that 'works for x' implies 'works for x + 1' (or the reverse).",
+    "Memoising a DFS that also carries a visited set. The cached result then depends on the path, which is wrong.",
+    "Combining patterns can hide complexity: multiply the cost of the wrapper by the cost of the engine.",
+  ],
+  practiceProblems: [
+    {
+      n: 1011,
+      title: "Capacity To Ship Packages Within D Days",
+      slug: "capacity-to-ship-packages-within-d-days",
+      level: "Medium",
+    },
+    {
+      n: 1094,
+      title: "Car Pooling",
+      slug: "car-pooling",
+      level: "Medium",
+    },
+    {
+      n: 424,
+      title: "Longest Repeating Character Replacement",
+      slug: "longest-repeating-character-replacement",
+      level: "Medium",
+    },
+    {
+      n: 410,
+      title: "Split Array Largest Sum",
+      slug: "split-array-largest-sum",
+      level: "Hard",
+    },
+    {
+      n: 329,
+      title: "Longest Increasing Path in a Matrix",
+      slug: "longest-increasing-path-in-a-matrix",
+      level: "Hard",
+    },
+    {
+      n: 212,
+      title: "Word Search II",
+      slug: "word-search-ii",
+      level: "Hard",
+    },
+  ],
+  quiz: [
+    {
+      question: "You must split an array into m parts to minimise the largest part sum. Which two patterns combine?",
+      options: ["Binary search on the answer plus a greedy feasibility check", "Two pointers plus a heap", "DFS plus a trie", "Prefix sum plus a stack"],
+      correct: 0,
+      explanation: "If a maximum part sum of x is achievable, so is any larger value, so search x and check each with a greedy pass.",
+    },
+    {
+      question: "Why does adding memoisation make DFS efficient for Longest Increasing Path in a Matrix?",
+      options: ["Each cell's best path is computed once and reused, and strictly increasing paths cannot cycle", "It removes the need for recursion", "It sorts the grid", "It converts the grid to a tree"],
+      correct: 0,
+      explanation: "Without the cache the same cell is re-explored from many starting paths.",
+    },
+    {
+      question: "In Car Pooling, what does the difference array plus running sum do?",
+      options: ["Applies range updates in O(1) each and recovers the load at every position with one prefix pass", "Sorts the trips", "Detects cycles", "Finds the median"],
+      correct: 0,
+      explanation: "Add at the start, subtract at the end, then accumulate: a prefix sum of the changes.",
+    },
+    {
+      question: "In Word Search II, what does the trie give you over searching for each word separately?",
+      options: ["It prunes paths that are not a prefix of any word and finds all words in one traversal", "It makes the grid smaller", "It removes recursion", "It sorts the words"],
+      correct: 0,
+      explanation: "A single DFS can serve every word at once, abandoning a path the moment no word continues that way.",
+    },
+    {
+      question: "What is a good sign that one pattern is not enough?",
+      options: ["The first pattern leaves a sub-problem, such as a feasibility check or repeated states, that another pattern solves", "The problem statement is long", "The input is a string", "The answer is an integer"],
+      correct: 0,
+      explanation: "Name the leftover sub-problem, then ask which pattern handles it.",
+    },
+  ],
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

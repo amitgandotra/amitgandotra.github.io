@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Adapter — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html" class="active">Patterns</a>
+      <a href="../integration/index.html">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Adapter wraps an existing class so it exposes the interface your code expects. It is the daily bread of integration work: a vendor SDK, a legacy client, or a third-party API almost never matches your internal interface.",
+  keyHeading: "When to use it, and the Pythonic take",
+  keyPoints: [
+    "Use when you must use a class you can't change (vendor SDK, legacy module) but it has the wrong method names or shapes.",
+    "Java: adapter class implementing the target interface. Python: a small <strong>wrapper class</strong> (composition) or even a function; duck typing means it just needs the right method names.",
+    "Prefer composition (hold the adaptee) over inheriting from it, so you control the surface area.",
+    "Keeping adapters at the edge of your system isolates vendor quirks from your business logic.",
+  ],
+  template: {
+    heading: "Wrapper adapter",
+    label: "python",
+    note: "Your code expects <code>.get_customer(id)</code>; the vendor client offers <code>.fetch(kind, key)</code>.",
+    code: `class VendorClient:                 # third-party, can't change
+    def fetch(self, kind, key):
+        return {"kind": kind, "id": key, "nm": "Ada"}
+
+class CustomerGateway:               # adapter: the interface our code wants
+    def __init__(self, client):
+        self._client = client
+
+    def get_customer(self, customer_id):
+        raw = self._client.fetch("customer", customer_id)
+        return {"id": raw["id"], "name": raw["nm"]}      # translate shape too
+
+gw = CustomerGateway(VendorClient())
+print(gw.get_customer(7))`,
+  },
+  examples: [
+    {
+      title: "Swapping vendors behind one interface",
+      prompt: "Two payment providers with different APIs, one internal <code>charge(amount_cents)</code>.",
+      code: `class StripeLike:
+    def create_charge(self, cents, currency):
+        return {"ok": True, "id": "ch_1"}
+
+class LegacyBank:
+    def pay(self, dollars):
+        return "APPROVED"
+
+class StripeAdapter:
+    def __init__(self, api): self.api = api
+    def charge(self, amount_cents):
+        return self.api.create_charge(amount_cents, "usd")["ok"]
+
+class BankAdapter:
+    def __init__(self, api): self.api = api
+    def charge(self, amount_cents):
+        return self.api.pay(amount_cents / 100) == "APPROVED"
+
+def checkout(gateway, cents):
+    return gateway.charge(cents)
+
+print(checkout(StripeAdapter(StripeLike()), 1999))
+print(checkout(BankAdapter(LegacyBank()), 1999))`,
+      explanation: "<code>checkout</code> depends only on <code>charge(cents)</code>. Each adapter absorbs its provider's units (cents vs dollars), names, and success signals, so a customer changing provider touches one adapter.",
+      output: "True / True",
+    },
+    {
+      title: "Adapter as a function",
+      prompt: "When only one method is needed, a function is a perfectly good adapter.",
+      code: `def to_internal(vendor_row):
+    return {
+        "id": int(vendor_row["ID"]),
+        "email": vendor_row["EMAIL_ADDR"].strip().lower(),
+    }
+
+rows = [{"ID": "12", "EMAIL_ADDR": " Ada@Example.com "}]
+print([to_internal(r) for r in rows])`,
+      explanation: "This is the seed of the anti-corruption layer covered in Enterprise Integration → Data Mapping: convert vendor-shaped data into your own model at the boundary.",
+      output: "[{'id': 12, 'email': 'ada@example.com'}]",
+    },
+  ],
+  gotchas: [
+    "Leaky adapters that return vendor objects. Translate to your own types at the boundary.",
+    "Inheriting from the vendor class exposes every vendor method to your callers. Prefer holding it.",
+    "Putting business logic in the adapter. Keep it to translation only.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Add a third provider adapter and confirm <code>checkout</code> is unchanged.",
+    "Make adapters raise your own <code>PaymentError</code> instead of vendor exceptions.",
+    "Write a test using a fake adaptee to test an adapter without the network.",
+  ],
+  quiz: [
+    {
+      question: "What does an Adapter do?",
+      options: [
+        "Makes an existing class fit the interface your code expects",
+        "Creates one global instance",
+        "Adds logging around calls only",
+        "Builds objects step by step",
+      ],
+      correct: 0,
+      explanation: "It translates between the interface you have and the one you need.",
+    },
+    {
+      question: "Why prefer composition over inheritance for an adapter?",
+      options: [
+        "You control exactly which methods are exposed and aren't tied to the vendor class",
+        "Inheritance is invalid in Python",
+        "Composition is faster at runtime",
+        "It avoids needing tests",
+      ],
+      correct: 0,
+      explanation: "Holding the vendor object keeps its surface hidden and reduces coupling.",
+    },
+    {
+      question: "Where should adapters live in a system?",
+      options: [
+        "At the boundary, isolating vendor quirks from business logic",
+        "Inside every business function",
+        "Only in tests",
+        "In the database",
+      ],
+      correct: 0,
+      explanation: "Boundary placement keeps changes to a vendor from rippling through the codebase.",
+    },
+    {
+      question: "What should an adapter avoid?",
+      options: [
+        "Containing business rules beyond translation",
+        "Renaming methods",
+        "Converting units",
+        "Wrapping exceptions",
+      ],
+      correct: 0,
+      explanation: "Business rules belong elsewhere; the adapter's job is translation.",
+    },
+    {
+      question: "How does duck typing help adapters?",
+      options: [
+        "The adapter only needs the right method names; no shared base class is required",
+        "It forces adapters to subclass",
+        "It makes adapters unnecessary",
+        "It disables type checks",
+      ],
+      correct: 0,
+      explanation: "Callers rely on behavior, so any object with the expected methods works.",
+    },
+  ],
+  id: "adapter",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

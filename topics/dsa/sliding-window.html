@@ -11,11 +11,6 @@
 <header class="site-header">
   <div class="container">
     <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
-    <nav class="site-nav">
-      <a href="../python/index.html">Python</a>
-      <a href="index.html" class="active">DSA</a>
-      <a href="../../index.html">All Topics</a>
-    </nav>
   </div>
 </header>
 
@@ -35,9 +30,9 @@
   <div class="container">Becoming FDE — build in public, ship in prod.</div>
 </footer>
 
-<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/data/site.js"></script>
 <script src="../../js/progress.js"></script>
-<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/site-shell.js"></script>
 <script src="../../js/highlight.js"></script>
 <script src="../../js/quiz.js"></script>
 <script>
@@ -118,33 +113,59 @@ def min_window(s, t):
     },
   ],
   practiceProblems: [
-    "Best Time to Buy and Sell Stock",
-    "Longest Substring Without Repeating Characters",
-    "Longest Repeating Character Replacement",
-    "Permutation in String",
-    "Minimum Window Substring",
-    "Sliding Window Maximum",
+    {
+      n: 643,
+      title: "Maximum Average Subarray I",
+      slug: "maximum-average-subarray-i",
+      level: "Easy",
+    },
+    {
+      n: 121,
+      title: "Best Time to Buy and Sell Stock",
+      slug: "best-time-to-buy-and-sell-stock",
+      level: "Easy",
+    },
+    {
+      n: 3,
+      title: "Longest Substring Without Repeating Characters",
+      slug: "longest-substring-without-repeating-characters",
+      level: "Medium",
+    },
+    {
+      n: 424,
+      title: "Longest Repeating Character Replacement",
+      slug: "longest-repeating-character-replacement",
+      level: "Medium",
+    },
+    {
+      n: 567,
+      title: "Permutation in String",
+      slug: "permutation-in-string",
+      level: "Medium",
+    },
+    {
+      n: 76,
+      title: "Minimum Window Substring",
+      slug: "minimum-window-substring",
+      level: "Hard",
+    },
+    {
+      n: 239,
+      title: "Sliding Window Maximum",
+      slug: "sliding-window-maximum",
+      level: "Hard",
+    },
   ],
   quiz: [
     {
       question: "Sliding window is best suited for...",
-      options: [
-        "Problems about contiguous subarrays/substrings with a max/min/count condition",
-        "Any array problem in general",
-        "Graph traversal",
-        "Sorting a list",
-      ],
+      options: ["Problems about contiguous subarrays/substrings with a max/min/count condition", "Any array problem in general", "Graph traversal", "Sorting a list"],
       correct: 0,
       explanation: "The pattern's whole value is exploiting contiguity to update state incrementally rather than recompute it.",
     },
     {
       question: "What's the key efficiency gain of sliding window over brute force?",
-      options: [
-        "Each element is added and removed from the window at most once, giving O(n) instead of O(n^2)",
-        "It always uses less memory than any alternative",
-        "It avoids recursion entirely",
-        "It sorts the array first",
-      ],
+      options: ["Each element is added and removed from the window at most once, giving O(n) instead of O(n^2)", "It always uses less memory than any alternative", "It avoids recursion entirely", "It sorts the array first"],
       correct: 0,
       explanation: "Left and right pointers each traverse the array once, so total work across the whole run is linear.",
     },
@@ -161,29 +182,19 @@ def min_window(s, t):
     },
     {
       question: "In Minimum Window Substring, what does the 'missing' counter represent?",
-      options: [
-        "The total number of characters in t",
-        "How many of t's required character-counts are not yet satisfied by the current window",
-        "The current length of the window",
-        "The number of duplicate characters in s",
-      ],
+      options: ["The total number of characters in t", "How many of t's required character-counts are not yet satisfied by the current window", "The current length of the window", "The number of duplicate characters in s"],
       correct: 1,
       explanation: "It hits zero exactly when the window contains at least as many of each required character as t needs.",
     },
     {
       question: "If you find yourself recomputing a window's sum or count from scratch on every step, what should you do instead?",
-      options: [
-        "Update the running sum/count incrementally as the window slides",
-        "Nothing — recomputation is required",
-        "Switch to binary search",
-        "Add recursion",
-      ],
+      options: ["Update the running sum/count incrementally as the window slides", "Nothing — recomputation is required", "Switch to binary search", "Add recursion"],
       correct: 0,
       explanation: "Recomputing from scratch each step is exactly the O(n^2) brute force sliding window is meant to eliminate.",
     },
   ],
 };
 </script>
-<script src="../../js/pattern-page.js"></script>
+<script src="../../js/topic-page.js"></script>
 </body>
 </html>

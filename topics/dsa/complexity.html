@@ -146,9 +146,9 @@
   <div class="container">Becoming FDE — build in public, ship in prod.</div>
 </footer>
 
-<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/data/site.js"></script>
 <script src="../../js/progress.js"></script>
-<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/site-shell.js"></script>
 <script src="../../js/highlight.js"></script>
 <script src="../../js/quiz.js"></script>
 <script>
@@ -171,10 +171,6 @@ def factorial_iterative(n):
     for i in range(2, n + 1):
         result *= i
     return result`);
-
-  renderSidebar("complexity");
-  renderPagination("complexity");
-  initMobileSidebarToggle();
 
   const QUIZ = [
     {
@@ -249,9 +245,6 @@ def factorial_iterative(n):
     patternId: "complexity",
   });
 
-  document.addEventListener("quiz-complete", (e) => {
-    if (e.detail.topicId === "dsa") renderSidebar("complexity");
-  });
 });
 </script>
 </body>

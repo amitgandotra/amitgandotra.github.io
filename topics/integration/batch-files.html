@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Batch &amp; File-Based Integration — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html">Patterns</a>
+      <a href="../integration/index.html" class="active">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Many enterprise systems still exchange data as CSV, XML, or fixed-width files dropped on SFTP or a shared folder. Batch integration is high-latency but predictable, and it's often the only interface a legacy system offers. The craft is in validating rows, isolating bad ones, and making reloads safe.",
+  keyHeading: "Principles for reliable batch loads",
+  keyPoints: [
+    "<strong>Validate every row</strong>, and collect errors instead of failing the whole file on row 1.",
+    "<strong>Write rejects to a dead-letter file</strong> with the row number and reason, so the customer can fix the source data.",
+    "<strong>Idempotent loads</strong>: upsert on a natural key so re-running a file doesn't duplicate rows.",
+    "<strong>Stream, don't slurp</strong>: use <code>csv.DictReader</code> and chunk inserts so large files don't exhaust memory.",
+    "<strong>Beware encodings and dialects</strong>: BOMs, cp1252, semicolon delimiters, quoted newlines, leading zeros lost by spreadsheets.",
+    "<strong>Track the file</strong>: name, checksum, row counts in and out, so you can prove what happened.",
+  ],
+  template: {
+    heading: "Validating rows and separating rejects",
+    label: "python",
+    note: "The pattern: good rows go forward, bad rows are captured with a reason.",
+    code: `import csv, io
+
+def load(text):
+    good, rejects = [], []
+    reader = csv.DictReader(io.StringIO(text))
+    for line_no, row in enumerate(reader, start=2):        # header is line 1
+        errors = []
+        if not row["email"] or "@" not in row["email"]:
+            errors.append("bad email")
+        try:
+            amount = float(row["amount"])
+        except ValueError:
+            errors.append("bad amount")
+        if errors:
+            rejects.append({"line": line_no, "errors": errors, "row": row})
+        else:
+            good.append({"email": row["email"].strip().lower(), "amount": amount})
+    return good, rejects`,
+  },
+  examples: [
+    {
+      title: "Run it on a messy file",
+      prompt: "One valid row, one bad email, one bad amount.",
+      code: `import csv, io
+
+def load(text):
+    good, rejects = [], []
+    for line_no, row in enumerate(csv.DictReader(io.StringIO(text)), start=2):
+        errors = []
+        if not row["email"] or "@" not in row["email"]:
+            errors.append("bad email")
+        try:
+            amount = float(row["amount"])
+        except ValueError:
+            errors.append("bad amount")
+        if errors:
+            rejects.append((line_no, errors))
+        else:
+            good.append((row["email"].strip().lower(), amount))
+    return good, rejects
+
+data = "email,amount\\nAda@Example.com,10.5\\nnot-an-email,3\\nbob@x.com,abc\\n"
+good, rejects = load(data)
+print(good)
+print(rejects)`,
+      explanation: "The load doesn't abort on the first problem; it returns everything valid plus a precise list (line number and reason) the customer can act on. The reject report is often the most valuable deliverable of a batch integration.",
+      output: "[('ada@example.com', 10.5)] / [(3, ['bad email']), (4, ['bad amount'])]",
+    },
+    {
+      title: "Idempotent load with an upsert",
+      prompt: "Running the same file twice must not create duplicates. Use a unique key and <code>ON CONFLICT</code>.",
+      code: `import sqlite3
+
+conn = sqlite3.connect(":memory:")
+conn.execute("CREATE TABLE customers (email TEXT PRIMARY KEY, amount REAL)")
+
+def upsert(rows):
+    conn.executemany(
+        "INSERT INTO customers (email, amount) VALUES (?, ?) "
+        "ON CONFLICT(email) DO UPDATE SET amount = excluded.amount",
+        rows,
+    )
+    conn.commit()
+
+file_rows = [("ada@example.com", 10.5), ("bob@x.com", 7.0)]
+upsert(file_rows)
+upsert(file_rows)                                   # re-run the same file
+upsert([("ada@example.com", 12.0)])                 # a corrected value arrives
+print(conn.execute("SELECT * FROM customers ORDER BY email").fetchall())`,
+      explanation: "The primary key plus <code>ON CONFLICT DO UPDATE</code> makes the load safe to repeat and lets corrected files overwrite earlier values. Parameterized placeholders (<code>?</code>) also protect against SQL injection.",
+      output: "[('ada@example.com', 12.0), ('bob@x.com', 7.0)]",
+    },
+  ],
+  gotchas: [
+    "Failing the whole file on one bad row, or worse, silently skipping bad rows with no report.",
+    "Reading a huge file into memory. Stream and batch.",
+    "Wrong encoding: opening a cp1252 file as UTF-8 raises errors or garbles names. Detect or agree on it.",
+    "Spreadsheets stripping leading zeros from IDs (00123 becomes 123). Treat IDs as strings.",
+    "Picking up a file while it is still being written. Use a temp name then rename, or a done-marker file.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Write the rejects to a <code>rejects.csv</code> with line number, reason, and original row.",
+    "Add a row-count check: fail loudly if the file's trailer says 1000 rows but you read 998.",
+    "Make the loader commit every 1000 rows instead of at the end.",
+  ],
+  quiz: [
+    {
+      question: "What should a batch loader do with an invalid row?",
+      options: [
+        "Capture it with a reason in a reject report and keep loading valid rows",
+        "Abort the entire file",
+        "Silently drop it",
+        "Fix it randomly",
+      ],
+      correct: 0,
+      explanation: "Precise rejects let the customer fix data without losing the good rows.",
+    },
+    {
+      question: "What makes a load idempotent?",
+      options: [
+        "Upserting on a unique key so re-running doesn't duplicate rows",
+        "Deleting the table every time only",
+        "Running it once",
+        "Compressing the file",
+      ],
+      correct: 0,
+      explanation: "The same input yields the same final state no matter how many times it runs.",
+    },
+    {
+      question: "Why stream a CSV with DictReader instead of reading the whole file?",
+      options: [
+        "Memory stays bounded for large files",
+        "It is required by SQL",
+        "CSV can't be read otherwise",
+        "It sorts rows",
+      ],
+      correct: 0,
+      explanation: "Row-by-row processing scales to files larger than memory.",
+    },
+    {
+      question: "Why treat IDs like 00123 as strings?",
+      options: [
+        "Numeric conversion drops leading zeros and changes the ID",
+        "Strings are faster",
+        "Python forbids ints",
+        "IDs are always text in SQL",
+      ],
+      correct: 0,
+      explanation: "Leading zeros are significant for many identifiers.",
+    },
+    {
+      question: "How do you avoid reading a half-written file?",
+      options: [
+        "Write to a temp name then rename, or use a done-marker",
+        "Read faster",
+        "Ignore the problem",
+        "Use bigger buffers",
+      ],
+      correct: 0,
+      explanation: "Atomic rename or a marker signals the file is complete.",
+    },
+  ],
+  id: "batch-files",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

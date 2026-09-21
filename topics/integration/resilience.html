@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Resilience: Idempotency, Backoff &amp; Circuit Breakers — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html">Patterns</a>
+      <a href="../integration/index.html" class="active">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Integrations run over networks and other people's systems, so failures are normal: timeouts, duplicate deliveries, slow downstreams, partial outages. Resilience techniques (idempotency, backoff with jitter, circuit breakers) let your side stay correct and stable while the other side misbehaves.",
+  keyHeading: "The three essentials",
+  keyPoints: [
+    "<strong>Idempotency</strong>: performing an operation twice has the same effect as once. Send an <em>idempotency key</em> with writes; the server (or you) remembers the result for that key.",
+    "<strong>Retry with exponential backoff and jitter</strong>: wait longer after each failure, with randomness so many clients don't retry in lockstep (thundering herd).",
+    "<strong>Circuit breaker</strong>: after repeated failures, stop calling the dependency for a cooldown period ('open'), then probe carefully ('half-open').",
+    "Set <strong>timeouts</strong> everywhere and a <strong>total retry budget</strong>. Unbounded retries turn a blip into an outage.",
+    "Retry only <em>transient</em> errors; fail fast on permanent ones (validation, auth).",
+    "Prefer <strong>graceful degradation</strong>: serve cached or partial data when a dependency is down.",
+  ],
+  template: {
+    heading: "Backoff with full jitter",
+    label: "python",
+    note: "delay = random between 0 and min(cap, base * 2**attempt). Injected sleep and random keep it testable.",
+    code: `import random, time
+
+def retry(fn, attempts=5, base=0.5, cap=30.0, sleep=time.sleep, rand=random.random):
+    for attempt in range(attempts):
+        try:
+            return fn()
+        except ConnectionError:
+            if attempt == attempts - 1:
+                raise                                      # out of budget: surface it
+            delay = rand() * min(cap, base * (2 ** attempt))   # full jitter
+            sleep(delay)`,
+  },
+  examples: [
+    {
+      title: "Idempotency keys prevent double charges",
+      prompt: "The client times out and retries a payment; the same key returns the original result instead of charging twice.",
+      code: `charges = []
+results = {}        # idempotency_key -> stored result
+
+def create_charge(key, amount):
+    if key in results:
+        return results[key]            # replay: return the original result
+    charges.append(amount)             # the real side effect
+    results[key] = {"id": f"ch_{len(charges)}", "amount": amount}
+    return results[key]
+
+first = create_charge("order-77", 100)
+retry = create_charge("order-77", 100)      # network hiccup, client retried
+print(first == retry, len(charges))`,
+      explanation: "Without the key, the retry would create a second charge. With it, the operation is safe to repeat. Choose keys that identify the <em>intent</em> (an order ID), not the attempt (a random UUID per try).",
+      output: "True 1",
+    },
+    {
+      title: "A minimal circuit breaker",
+      prompt: "After 3 consecutive failures, fail fast for a cooldown instead of piling more load on a sick service.",
+      code: `class CircuitOpen(Exception):
+    pass
+
+class Breaker:
+    def __init__(self, threshold=3, cooldown=30, now=lambda: 0):
+        self.threshold, self.cooldown, self.now = threshold, cooldown, now
+        self.failures, self.opened_at = 0, None
+
+    def call(self, fn):
+        if self.opened_at is not None:
+            if self.now() - self.opened_at < self.cooldown:
+                raise CircuitOpen("skipping call")          # fail fast
+            self.opened_at = None                            # half-open: allow a probe
+        try:
+            result = fn()
+        except Exception:
+            self.failures += 1
+            if self.failures >= self.threshold:
+                self.opened_at = self.now()
+            raise
+        self.failures = 0                                   # success closes the circuit
+        return result
+
+clock = [0]
+b = Breaker(now=lambda: clock[0])
+
+def flaky(): raise ConnectionError("down")
+
+for _ in range(3):
+    try: b.call(flaky)
+    except ConnectionError: pass
+
+try:
+    b.call(flaky)
+except CircuitOpen as e:
+    print("open:", e)
+
+clock[0] = 31                      # cooldown passed
+print(b.call(lambda: "recovered"))`,
+      explanation: "The fourth call never reaches the failing service, which protects it and keeps your latency low. After the cooldown one probe call is allowed; if it succeeds the circuit closes again. In production, use a tested library and add metrics for state changes.",
+      output: "open: skipping call / recovered",
+    },
+  ],
+  gotchas: [
+    "Retrying non-idempotent writes without a key, causing duplicates.",
+    "Retrying without jitter: all clients retry together and re-overload the service.",
+    "Retrying permanent errors (400, 401). It wastes time and can trigger lockouts.",
+    "Nested retries (client, library, gateway) multiplying attempts. Count total attempts across layers.",
+    "No timeout, so 'retry' never even begins because the first call hangs.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Test <code>retry</code> with a function that fails twice then succeeds, injecting <code>sleep</code> to record delays.",
+    "Persist idempotency results in SQLite with a unique key so they survive restarts.",
+    "Add a half-open state that allows only one probe at a time.",
+  ],
+  quiz: [
+    {
+      question: "What is idempotency?",
+      options: [
+        "Repeating an operation has the same effect as doing it once",
+        "Operations run in parallel",
+        "Operations are encrypted",
+        "Operations never fail",
+      ],
+      correct: 0,
+      explanation: "It makes retries safe because duplicates don't change the outcome.",
+    },
+    {
+      question: "Why add jitter to backoff?",
+      options: [
+        "To prevent many clients retrying at the same moment (thundering herd)",
+        "To make delays shorter",
+        "To hide errors",
+        "To sort requests",
+      ],
+      correct: 0,
+      explanation: "Randomization spreads retries out over time.",
+    },
+    {
+      question: "What does an open circuit breaker do?",
+      options: [
+        "Fails fast without calling the dependency for a cooldown",
+        "Retries faster",
+        "Encrypts requests",
+        "Deletes data",
+      ],
+      correct: 0,
+      explanation: "It protects the struggling service and your own latency.",
+    },
+    {
+      question: "What should an idempotency key identify?",
+      options: [
+        "The intended operation (e.g., an order), not each attempt",
+        "The time of day",
+        "Each network packet",
+        "The server",
+      ],
+      correct: 0,
+      explanation: "Retries of the same intent must reuse the same key.",
+    },
+    {
+      question: "Which errors should generally NOT be retried?",
+      options: [
+        "Permanent ones like 400 validation or 401 auth failures",
+        "Timeouts",
+        "503 responses",
+        "Connection resets",
+      ],
+      correct: 0,
+      explanation: "Retrying won't change a permanent failure.",
+    },
+  ],
+  id: "resilience",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

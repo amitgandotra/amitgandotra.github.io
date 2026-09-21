@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Depth-First Search (DFS) — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "dfs",
+  summary: "Depth-first search follows one branch as far as it goes before backing up. Use it to visit everything reachable, count connected components, detect cycles, copy a graph, or enumerate paths in trees and graphs. It runs in O(V + E) with recursion or an explicit stack.",
+  recognize: [
+    "'Explore all paths' or 'is B reachable from A'",
+    "<strong>Connected components</strong>, provinces, groups of friends",
+    "<strong>Cycle detection</strong>, or 'can all tasks finish'",
+    "Clone or copy a graph; path sums from root to leaf",
+    "You need to visit <em>everything</em>, not the shortest route",
+  ],
+  template: {
+    note: "Recursive DFS with a visited set, and the same thing with an explicit stack for very deep graphs.",
+    code: `def dfs(graph, start):
+    seen = set()
+    def visit(node):
+        seen.add(node)
+        for nxt in graph[node]:
+            if nxt not in seen:
+                visit(nxt)
+    visit(start)
+    return seen
+
+def dfs_iterative(graph, start):
+    seen, stack = {start}, [start]
+    while stack:
+        node = stack.pop()
+        for nxt in graph[node]:
+            if nxt not in seen:
+                seen.add(nxt)
+                stack.append(nxt)
+    return seen`,
+  },
+  examples: [
+    {
+      title: "Number of Provinces (connected components)",
+      prompt: "Given an adjacency matrix where <code>is_connected[i][j] == 1</code> means cities i and j are directly connected, count the <strong>groups of connected cities</strong>.",
+      code: `def find_circle_num(is_connected):
+    n = len(is_connected)
+    seen = set()
+
+    def visit(i):
+        seen.add(i)
+        for j in range(n):
+            if is_connected[i][j] and j not in seen:
+                visit(j)
+
+    provinces = 0
+    for i in range(n):
+        if i not in seen:
+            provinces += 1               # a new, unvisited city starts a new group
+            visit(i)                     # mark everything connected to it
+    return provinces`,
+      explanation: "The outer loop makes sure disconnected parts are all found. Each time it meets an unvisited city, that city begins a new component, and one DFS marks the whole component so it is never counted twice.",
+      complexity: "Time: O(n²) · Space: O(n)",
+      complexityWhy: "Each city is visited once, and visiting scans a full matrix row of length n, giving n × n work. The visited set and recursion stack are at most n deep.",
+    },
+    {
+      title: "Course Schedule (cycle detection)",
+      prompt: "Given <code>num_courses</code> and prerequisite pairs <code>[a, b]</code> ('to take a you must first take b'), decide whether all courses can be finished. That is, the graph has <strong>no cycle</strong>.",
+      code: `def can_finish(num_courses, prerequisites):
+    graph = {i: [] for i in range(num_courses)}
+    for course, pre in prerequisites:
+        graph[course].append(pre)
+
+    state = {}                      # 0 = on the current path, 1 = fully explored
+
+    def has_cycle(node):
+        if state.get(node) == 0:
+            return True             # back edge: we looped onto our own path
+        if state.get(node) == 1:
+            return False            # already proven safe
+        state[node] = 0
+        for pre in graph[node]:
+            if has_cycle(pre):
+                return True
+        state[node] = 1
+        return False
+
+    return not any(has_cycle(c) for c in range(num_courses))`,
+      explanation: "A plain visited set is not enough for directed graphs: reaching a visited node is fine if it was finished earlier, but reaching one that is <em>still on the current path</em> means a cycle. Three states (unvisited, on path, done) capture that.",
+      complexity: "Time: O(V + E) · Space: O(V)",
+      complexityWhy: "Each vertex is expanded once and each prerequisite edge examined once. The state map and the recursion stack are each at most V in size.",
+    },
+  ],
+  gotchas: [
+    "Recursion depth is about 1000 in Python. For large or path-like graphs use an explicit stack.",
+    "Marking a node visited <em>after</em> recursing (or after popping) can revisit it many times. Mark on entry or when pushing.",
+    "Undirected cycle detection must ignore the edge back to the parent; directed cycle detection needs the 'on current path' state.",
+    "Disconnected graphs need an outer loop over all nodes, not a single DFS from node 0.",
+  ],
+  practiceProblems: [
+    {
+      n: 733,
+      title: "Flood Fill",
+      slug: "flood-fill",
+      level: "Easy",
+    },
+    {
+      n: 547,
+      title: "Number of Provinces",
+      slug: "number-of-provinces",
+      level: "Medium",
+    },
+    {
+      n: 133,
+      title: "Clone Graph",
+      slug: "clone-graph",
+      level: "Medium",
+    },
+    {
+      n: 797,
+      title: "All Paths From Source to Target",
+      slug: "all-paths-from-source-to-target",
+      level: "Medium",
+    },
+    {
+      n: 113,
+      title: "Path Sum II",
+      slug: "path-sum-ii",
+      level: "Medium",
+    },
+    {
+      n: 207,
+      title: "Course Schedule",
+      slug: "course-schedule",
+      level: "Medium",
+    },
+    {
+      n: 261,
+      title: "Graph Valid Tree",
+      slug: "graph-valid-tree",
+      level: "Medium",
+      premium: true,
+    },
+  ],
+  quiz: [
+    {
+      question: "When is DFS the natural choice over BFS?",
+      options: ["Exploring everything reachable, finding components, detecting cycles, or enumerating paths", "Finding the shortest path in an unweighted graph", "Level-by-level traversal", "Finding the cheapest weighted path"],
+      correct: 0,
+      explanation: "DFS goes deep and visits everything; BFS is for shortest paths and levels.",
+    },
+    {
+      question: "What is the time complexity of DFS on a graph stored as an adjacency list?",
+      options: ["O(V + E)", "O(V * E)", "O(V^2)", "O(E log E)"],
+      correct: 0,
+      explanation: "Each vertex is expanded once and each edge examined once (twice if undirected).",
+    },
+    {
+      question: "Why does DFS mark a node visited before exploring its neighbours?",
+      options: ["To avoid revisiting it (and looping forever on cycles)", "It is optional", "To sort the graph", "To count edges"],
+      correct: 0,
+      explanation: "Without a visited mark, a cycle would recurse forever.",
+    },
+    {
+      question: "In directed-graph cycle detection, what does reaching a node that is still 'on the current path' mean?",
+      options: ["A cycle exists", "The graph is disconnected", "The node has no prerequisites", "The input is invalid"],
+      correct: 0,
+      explanation: "You have returned to an ancestor of the current DFS path: a back edge.",
+    },
+    {
+      question: "Which data structure does iterative DFS use?",
+      options: ["A stack", "A queue", "A heap", "A hash set only"],
+      correct: 0,
+      explanation: "LIFO order reproduces the depth-first behaviour of the call stack.",
+    },
+  ],
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

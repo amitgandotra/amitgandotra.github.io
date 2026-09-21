@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>State — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html" class="active">Patterns</a>
+      <a href="../integration/index.html">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "State lets an object change its behavior when its internal state changes, replacing sprawling if/elif checks on a status field with explicit states and legal transitions. Orders, tickets, jobs, and connection lifecycles are classic examples.",
+  keyHeading: "When to use it, and the Pythonic take",
+  keyPoints: [
+    "Use when the same action means different things depending on status, or when only some transitions are legal (you can't ship a cancelled order).",
+    "Java: State interface + one class per state. Python: for small machines, an <strong>Enum plus a transitions dict</strong> is clearer than classes.",
+    "Use state <em>classes</em> when each state carries substantial behavior of its own.",
+    "Making illegal transitions raise errors protects data integrity, which matters when your code syncs status between systems.",
+  ],
+  template: {
+    heading: "Enum + transition table",
+    label: "python",
+    note: "Legal moves live in one data structure, not scattered across if statements.",
+    code: `from enum import Enum
+
+class Status(Enum):
+    NEW = "new"
+    PAID = "paid"
+    SHIPPED = "shipped"
+    CANCELLED = "cancelled"
+
+ALLOWED = {
+    Status.NEW:       {Status.PAID, Status.CANCELLED},
+    Status.PAID:      {Status.SHIPPED, Status.CANCELLED},
+    Status.SHIPPED:   set(),
+    Status.CANCELLED: set(),
+}
+
+class Order:
+    def __init__(self):
+        self.status = Status.NEW
+    def move_to(self, new):
+        if new not in ALLOWED[self.status]:
+            raise ValueError(f"{self.status.value} -> {new.value} not allowed")
+        self.status = new`,
+  },
+  examples: [
+    {
+      title: "Using the state machine",
+      prompt: "Legal transitions succeed; illegal ones fail loudly.",
+      code: `from enum import Enum
+
+class Status(Enum):
+    NEW = "new"; PAID = "paid"; SHIPPED = "shipped"; CANCELLED = "cancelled"
+
+ALLOWED = {
+    Status.NEW: {Status.PAID, Status.CANCELLED},
+    Status.PAID: {Status.SHIPPED, Status.CANCELLED},
+    Status.SHIPPED: set(), Status.CANCELLED: set(),
+}
+
+class Order:
+    def __init__(self): self.status = Status.NEW
+    def move_to(self, new):
+        if new not in ALLOWED[self.status]:
+            raise ValueError(f"{self.status.value} -> {new.value} not allowed")
+        self.status = new
+
+o = Order()
+o.move_to(Status.PAID)
+o.move_to(Status.SHIPPED)
+try:
+    o.move_to(Status.CANCELLED)
+except ValueError as e:
+    print(e)`,
+      explanation: "A shipped order can't be cancelled, and that rule is one line of data. When a customer's system sends an out-of-order status update, you get an explicit error instead of silent corruption.",
+      output: "shipped -> cancelled not allowed",
+    },
+    {
+      title: "State classes with behavior",
+      prompt: "When states have different behavior, not just different permissions, give each its own class.",
+      code: `class Idle:
+    def press(self, player):
+        player.state = Playing()
+        return "start playing"
+
+class Playing:
+    def press(self, player):
+        player.state = Paused()
+        return "pause"
+
+class Paused:
+    def press(self, player):
+        player.state = Playing()
+        return "resume"
+
+class Player:
+    def __init__(self):
+        self.state = Idle()
+    def press(self):
+        return self.state.press(self)      # behavior delegates to the current state
+
+p = Player()
+print([p.press() for _ in range(4)])`,
+      explanation: "The same <code>press()</code> call does different things depending on the current state object. No conditionals: each state decides what happens and which state comes next.",
+      output: "['start playing', 'pause', 'resume', 'pause']",
+    },
+  ],
+  gotchas: [
+    "Allowing direct assignment to <code>status</code> from anywhere bypasses the rules. Route changes through one method.",
+    "State machines mirrored in an external system can drift. Reconcile periodically.",
+    "Don't build state classes when a small table would do.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Add a REFUNDED state reachable only from SHIPPED and update the table.",
+    "Log every transition with a timestamp to build an audit trail.",
+    "Convert the player example to an Enum + table and compare readability.",
+  ],
+  quiz: [
+    {
+      question: "What problem does the State pattern solve?",
+      options: [
+        "Behavior that varies with internal status, replacing scattered if/elif chains",
+        "Creating one instance",
+        "Adding logging",
+        "Translating interfaces",
+      ],
+      correct: 0,
+      explanation: "State centralizes what each status can do and where it may go next.",
+    },
+    {
+      question: "For a small workflow, what is often clearer than state classes?",
+      options: [
+        "An Enum plus a dict of allowed transitions",
+        "A metaclass",
+        "A singleton",
+        "A global counter",
+      ],
+      correct: 0,
+      explanation: "Data-driven rules are compact and easy to review.",
+    },
+    {
+      question: "Why should illegal transitions raise errors?",
+      options: [
+        "To prevent silent data corruption from out-of-order updates",
+        "To slow the program",
+        "Because Python requires it",
+        "To hide bugs",
+      ],
+      correct: 0,
+      explanation: "Loud failures expose bad input from other systems.",
+    },
+    {
+      question: "When do state classes make sense?",
+      options: [
+        "When each state has substantial behavior of its own",
+        "Whenever there are two statuses",
+        "Never",
+        "Only in tests",
+      ],
+      correct: 0,
+      explanation: "If states differ in behavior, not just rules, classes keep them cohesive.",
+    },
+    {
+      question: "How should status changes be applied?",
+      options: [
+        "Through one method that enforces the transition rules",
+        "By assigning the attribute anywhere",
+        "Only in the database",
+        "By reflection",
+      ],
+      correct: 0,
+      explanation: "A single choke point guarantees the rules are checked.",
+    },
+  ],
+  id: "state",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

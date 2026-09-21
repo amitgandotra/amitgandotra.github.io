@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Topological Sort — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "topological-sort",
+  summary: "A topological order lists the nodes of a directed acyclic graph so that every edge points forward: each task appears after the tasks it depends on. Kahn's algorithm repeatedly removes nodes with no remaining prerequisites; if it cannot remove them all, the graph has a cycle and no valid order exists.",
+  recognize: [
+    "<strong>Prerequisites, dependencies, build order</strong>",
+    "'Return a valid order' or 'is it possible to finish everything'",
+    "Deriving an order from constraints (alien dictionary: letters from sorted words)",
+    "A directed graph where you need the order, not just reachability",
+    "Peeling a tree layer by layer from its leaves (minimum height trees)",
+  ],
+  template: {
+    note: "Kahn's algorithm with in-degrees. If the result is shorter than n, there was a cycle.",
+    code: `from collections import defaultdict, deque
+
+def topo_order(n, edges):                  # edge (a, b): a must come before b
+    graph = defaultdict(list)
+    indegree = [0] * n
+    for a, b in edges:
+        graph[a].append(b)
+        indegree[b] += 1
+    queue = deque(i for i in range(n) if indegree[i] == 0)
+    order = []
+    while queue:
+        node = queue.popleft()
+        order.append(node)
+        for nxt in graph[node]:
+            indegree[nxt] -= 1             # one prerequisite is now satisfied
+            if indegree[nxt] == 0:
+                queue.append(nxt)
+    return order if len(order) == n else []    # shorter means a cycle`,
+  },
+  examples: [
+    {
+      title: "Course Schedule II",
+      prompt: "Return an <strong>order</strong> in which to take all courses given prerequisite pairs <code>[course, prerequisite]</code>, or an empty list if impossible.",
+      code: `def find_order(num_courses, prerequisites):
+    return topo_order(num_courses, [(pre, course) for course, pre in prerequisites])`,
+      explanation: "This is the template with the edge direction fixed: a prerequisite must come <em>before</em> its course. Start with courses that have no prerequisites, and unlock others as their prerequisite count reaches zero.",
+      complexity: "Time: O(V + E) · Space: O(V + E)",
+      complexityWhy: "Each course is enqueued once and each prerequisite edge is relaxed once. The adjacency list stores all E edges.",
+    },
+    {
+      title: "Alien Dictionary (Premium on LeetCode)",
+      prompt: "Given words <strong>sorted in an alien language</strong>, derive the order of its letters, or return an empty string if the input is inconsistent.",
+      code: `from collections import deque
+
+def alien_order(words):
+    graph = {c: set() for w in words for c in w}
+    for a, b in zip(words, words[1:]):
+        for x, y in zip(a, b):
+            if x != y:
+                graph[x].add(y)              # x comes before y
+                break
+        else:
+            if len(a) > len(b):
+                return ""                    # "abc" cannot come before "ab"
+    indegree = {c: 0 for c in graph}
+    for c in graph:
+        for nxt in graph[c]:
+            indegree[nxt] += 1
+    queue = deque(c for c in indegree if indegree[c] == 0)
+    out = []
+    while queue:
+        c = queue.popleft()
+        out.append(c)
+        for nxt in graph[c]:
+            indegree[nxt] -= 1
+            if indegree[nxt] == 0:
+                queue.append(nxt)
+    return "".join(out) if len(out) == len(graph) else ""`,
+      explanation: "Comparing neighbouring words: the first differing letters give one edge. Then it is a topological sort over letters. Two traps: a longer word before its own prefix is invalid, and a cycle means the ordering is contradictory.",
+      complexity: "Time: O(C) where C is the total number of characters · Space: O(U + E)",
+      complexityWhy: "Building edges reads each adjacent word pair once (bounded by the total characters). Kahn's algorithm is linear in the number of distinct letters U and edges E.",
+    },
+  ],
+  gotchas: [
+    "Getting the edge direction backwards. Decide whether your edge means 'a before b' and stay consistent.",
+    "Forgetting the cycle check: if the order has fewer than n nodes, there is no valid ordering.",
+    "There can be many valid orders. Tests should check validity, not one specific order (unless the problem guarantees uniqueness).",
+    "Topological sort applies to directed graphs only. Undirected graphs need connectivity techniques instead.",
+  ],
+  practiceProblems: [
+    {
+      n: 207,
+      title: "Course Schedule",
+      slug: "course-schedule",
+      level: "Medium",
+    },
+    {
+      n: 210,
+      title: "Course Schedule II",
+      slug: "course-schedule-ii",
+      level: "Medium",
+    },
+    {
+      n: 802,
+      title: "Find Eventual Safe States",
+      slug: "find-eventual-safe-states",
+      level: "Medium",
+    },
+    {
+      n: 310,
+      title: "Minimum Height Trees",
+      slug: "minimum-height-trees",
+      level: "Medium",
+    },
+    {
+      n: 1136,
+      title: "Parallel Courses",
+      slug: "parallel-courses",
+      level: "Medium",
+      premium: true,
+    },
+    {
+      n: 269,
+      title: "Alien Dictionary",
+      slug: "alien-dictionary",
+      level: "Hard",
+      premium: true,
+    },
+  ],
+  quiz: [
+    {
+      question: "In Kahn's algorithm, which nodes are put on the queue first?",
+      options: ["Nodes with in-degree 0 (no prerequisites)", "Nodes with the most edges", "Nodes chosen at random", "Nodes with out-degree 0"],
+      correct: 0,
+      explanation: "Those have nothing that must precede them, so they can go first.",
+    },
+    {
+      question: "How does Kahn's algorithm reveal a cycle?",
+      options: ["The final order contains fewer than n nodes", "The queue overflows", "An exception is raised", "It cannot detect cycles"],
+      correct: 0,
+      explanation: "Nodes on a cycle never reach in-degree 0, so they are never emitted.",
+    },
+    {
+      question: "What is the time complexity of a topological sort?",
+      options: ["O(V + E)", "O(V^2)", "O(E log V)", "O(V log V)"],
+      correct: 0,
+      explanation: "Each vertex and each edge is processed once.",
+    },
+    {
+      question: "Which words in a problem statement most strongly suggest topological sort?",
+      options: ["Prerequisites, dependencies, or 'must come before'", "Sorted array", "Longest substring", "Top k"],
+      correct: 0,
+      explanation: "Ordering constraints on a directed graph are exactly what it solves.",
+    },
+    {
+      question: "In a DFS-based topological sort, how is the final order produced?",
+      options: ["Reverse the order in which nodes finish (post-order)", "The order in which nodes are first visited", "Sorting nodes by name", "By in-degree only"],
+      correct: 0,
+      explanation: "A node finishes only after everything it points to has finished, so reversing gives dependencies first.",
+    },
+  ],
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

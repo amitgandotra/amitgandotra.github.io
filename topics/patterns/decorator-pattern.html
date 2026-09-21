@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Decorator — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html" class="active">Patterns</a>
+      <a href="../integration/index.html">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "The Decorator pattern adds behavior to an object by wrapping it in another object with the same interface. Logging, caching, retry, metrics, and auth checks can be layered on without touching the wrapped class. Python also has @decorator syntax for functions, which is a related but separate tool.",
+  keyHeading: "When to use it, and the Pythonic take",
+  keyPoints: [
+    "Use when you want to add responsibilities to individual objects dynamically, and stack them (cache around retry around client).",
+    "<strong>Object decorator (GoF)</strong>: a wrapper class exposing the same methods, delegating to the wrapped object.",
+    "<strong>Function decorator (<code>@syntax</code>)</strong>: wraps a function at definition time. Covered in Python → Functional Python.",
+    "Use <code>__getattr__</code> to delegate everything you don't override, instead of re-declaring every method.",
+  ],
+  template: {
+    heading: "Wrapper with the same interface",
+    label: "python",
+    note: "The wrapper looks like the client, does extra work, then delegates.",
+    code: `class Client:
+    def get(self, path):
+        return f"data from {path}"
+
+class LoggingClient:
+    def __init__(self, inner):
+        self._inner = inner
+
+    def get(self, path):
+        print(f"GET {path}")
+        return self._inner.get(path)
+
+client = LoggingClient(Client())
+print(client.get("/orders"))`,
+  },
+  examples: [
+    {
+      title: "Stacking decorators: cache around logging",
+      prompt: "Each wrapper adds one concern. Order matters: the outer layer sees calls first.",
+      code: `class Client:
+    def get(self, path):
+        return f"data from {path}"
+
+class LoggingClient:
+    def __init__(self, inner): self._inner = inner
+    def get(self, path):
+        print("network call:", path)
+        return self._inner.get(path)
+
+class CachingClient:
+    def __init__(self, inner):
+        self._inner = inner
+        self._cache = {}
+    def get(self, path):
+        if path not in self._cache:
+            self._cache[path] = self._inner.get(path)
+        return self._cache[path]
+
+client = CachingClient(LoggingClient(Client()))
+client.get("/a")
+client.get("/a")      # served from cache, no network line printed`,
+      explanation: "Because caching is outermost, the second call never reaches the logger or the real client. Swap the order and you'd log every call, cached or not. Both wrappers are unaware of each other.",
+      output: "network call: /a  (printed once)",
+    },
+    {
+      title: "Delegating with __getattr__",
+      prompt: "Only override what you change; forward everything else automatically.",
+      code: `class Timed:
+    def __init__(self, inner):
+        self._inner = inner
+
+    def __getattr__(self, name):            # called only for attributes not found on Timed
+        attr = getattr(self._inner, name)
+        if not callable(attr):
+            return attr
+        def wrapper(*args, **kwargs):
+            result = attr(*args, **kwargs)
+            print(f"{name} finished")
+            return result
+        return wrapper
+
+class Service:
+    def ping(self): return "pong"
+    def echo(self, x): return x
+
+s = Timed(Service())
+print(s.ping())
+print(s.echo("hi"))`,
+      explanation: "One wrapper now instruments every method of any object, without listing them. It's powerful, but it hides the real interface from IDEs and type checkers, so use it sparingly.",
+      output: "ping finished / pong / echo finished / hi",
+    },
+  ],
+  gotchas: [
+    "Confusing this with <code>@decorator</code> syntax. Same name, different mechanism and use case.",
+    "Wrapper order changes behavior (cache vs log; retry vs circuit breaker). Document it.",
+    "<code>__getattr__</code> delegation hides methods from type checkers and doesn't forward special methods like <code>__len__</code>.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Add a <code>RetryingClient</code> wrapper and test where it sits in the stack.",
+    "Swap the order of caching and logging and predict the output first.",
+    "Reimplement the logging wrapper using a function decorator and compare.",
+  ],
+  quiz: [
+    {
+      question: "What does the Decorator pattern do?",
+      options: [
+        "Adds behavior by wrapping an object that shares the same interface",
+        "Creates one instance only",
+        "Converts one interface into another",
+        "Hides a subsystem",
+      ],
+      correct: 0,
+      explanation: "The wrapper and wrapped object are interchangeable to callers, letting behavior be layered.",
+    },
+    {
+      question: "How does the object Decorator differ from Python's @decorator syntax?",
+      options: [
+        "One wraps objects at runtime; the other wraps functions when they're defined",
+        "They are identical",
+        "@decorator only works on classes",
+        "The object pattern is deprecated",
+      ],
+      correct: 0,
+      explanation: "They both use wrapping, but they operate on different things and are applied differently.",
+    },
+    {
+      question: "In CachingClient(LoggingClient(Client())), what happens on a cache hit?",
+      options: [
+        "The logger and real client are never called",
+        "The logger still runs",
+        "The real client runs twice",
+        "An error is raised",
+      ],
+      correct: 0,
+      explanation: "The outer layer answers from cache and doesn't delegate further.",
+    },
+    {
+      question: "What does __getattr__ do in a delegating wrapper?",
+      options: [
+        "Handles attributes not found on the wrapper, so they can be forwarded to the inner object",
+        "Runs on every attribute access",
+        "Deletes attributes",
+        "Creates the instance",
+      ],
+      correct: 0,
+      explanation: "It is a fallback lookup used when normal attribute search fails.",
+    },
+    {
+      question: "Why does wrapper order matter?",
+      options: [
+        "Each layer only sees calls its outer layers pass through",
+        "Python sorts wrappers alphabetically",
+        "It doesn't matter",
+        "Only the innermost runs",
+      ],
+      correct: 0,
+      explanation: "Behavior such as caching, retrying and logging changes depending on who wraps whom.",
+    },
+  ],
+  id: "decorator-pattern",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

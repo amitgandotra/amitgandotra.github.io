@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Intervals — Becoming FDE</title>
+<title>Overlapping Intervals — Becoming FDE</title>
 <link rel="stylesheet" href="../../css/style.css" />
 </head>
 <body>
@@ -11,11 +11,6 @@
 <header class="site-header">
   <div class="container">
     <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
-    <nav class="site-nav">
-      <a href="../python/index.html">Python</a>
-      <a href="index.html" class="active">DSA</a>
-      <a href="../../index.html">All Topics</a>
-    </nav>
   </div>
 </header>
 
@@ -35,21 +30,16 @@
   <div class="container">Becoming FDE — build in public, ship in prod.</div>
 </footer>
 
-<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/data/site.js"></script>
 <script src="../../js/progress.js"></script>
-<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/site-shell.js"></script>
 <script src="../../js/highlight.js"></script>
 <script src="../../js/quiz.js"></script>
 <script>
 const PAGE_DATA = {
   id: "intervals",
   summary: "Sort intervals by start (or end) time, then sweep once to merge or detect overlap. The vast majority of interval problems reduce to 'sort, then a single greedy pass.'",
-  recognize: [
-    "Problem gives a list of [start, end] pairs",
-    "Need to merge overlapping intervals, find free time, or detect conflicts",
-    "Meeting room / scheduling style problems",
-    "Sorting by start or end time unlocks a linear sweep",
-  ],
+  recognize: ["Problem gives a list of [start, end] pairs", "Need to merge overlapping intervals, find free time, or detect conflicts", "Meeting room / scheduling style problems", "Sorting by start or end time unlocks a linear sweep"],
   template: {
     note: "The base merge-intervals sweep.",
     code: `def merge_intervals(intervals):
@@ -110,22 +100,55 @@ def min_meeting_rooms(intervals):
     },
   ],
   practiceProblems: [
-    "Insert Interval",
-    "Merge Intervals",
-    "Non-overlapping Intervals",
-    "Meeting Rooms",
-    "Meeting Rooms II",
-    "Minimum Interval to Include Each Query",
+    {
+      n: 252,
+      title: "Meeting Rooms",
+      slug: "meeting-rooms",
+      level: "Easy",
+      premium: true,
+    },
+    {
+      n: 56,
+      title: "Merge Intervals",
+      slug: "merge-intervals",
+      level: "Medium",
+    },
+    {
+      n: 57,
+      title: "Insert Interval",
+      slug: "insert-interval",
+      level: "Medium",
+    },
+    {
+      n: 435,
+      title: "Non-overlapping Intervals",
+      slug: "non-overlapping-intervals",
+      level: "Medium",
+    },
+    {
+      n: 452,
+      title: "Minimum Number of Arrows to Burst Balloons",
+      slug: "minimum-number-of-arrows-to-burst-balloons",
+      level: "Medium",
+    },
+    {
+      n: 986,
+      title: "Interval List Intersections",
+      slug: "interval-list-intersections",
+      level: "Medium",
+    },
+    {
+      n: 253,
+      title: "Meeting Rooms II",
+      slug: "meeting-rooms-ii",
+      level: "Medium",
+      premium: true,
+    },
   ],
   quiz: [
     {
       question: "The near-universal first step for interval problems is...",
-      options: [
-        "Sort by start time (or sometimes end time)",
-        "Build a hashmap of intervals",
-        "Build a trie",
-        "Binary search the intervals directly",
-      ],
+      options: ["Sort by start time (or sometimes end time)", "Build a hashmap of intervals", "Build a trie", "Binary search the intervals directly"],
       correct: 0,
       explanation: "Sorting turns an otherwise O(n^2) overlap check into a single O(n) linear sweep.",
     },
@@ -137,12 +160,7 @@ def min_meeting_rooms(intervals):
     },
     {
       question: "In Meeting Rooms II, what does the heap store?",
-      options: [
-        "The end times of meetings currently occupying a room",
-        "The start times of all meetings",
-        "Room numbers only",
-        "Nothing — a heap isn't actually needed",
-      ],
+      options: ["The end times of meetings currently occupying a room", "The start times of all meetings", "Room numbers only", "Nothing — a heap isn't actually needed"],
       correct: 0,
       explanation: "The heap's root is always the soonest-freeing room, which is exactly what you need to check before opening a new one.",
     },
@@ -166,6 +184,6 @@ def min_meeting_rooms(intervals):
   ],
 };
 </script>
-<script src="../../js/pattern-page.js"></script>
+<script src="../../js/topic-page.js"></script>
 </body>
 </html>

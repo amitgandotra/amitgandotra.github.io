@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Facade — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html" class="active">Patterns</a>
+      <a href="../integration/index.html">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Facade provides one simple entry point in front of a complicated subsystem. Onboarding a customer might touch billing, identity, storage, and email systems. A facade exposes <code>onboard(customer)</code> and hides the choreography.",
+  keyHeading: "When to use it, and the Pythonic take",
+  keyPoints: [
+    "Use when callers need a few common operations but the underlying subsystem has many classes, ordering rules, and setup steps.",
+    "Java: a facade class. Python: a class <em>or a plain function/module</em>. A well-named module of functions is often the facade.",
+    "A facade does not forbid access to the subsystem; it just offers an easy path for the common case.",
+    "Great for FDE work: wrap a customer's messy systems behind one stable, documented interface for your own code.",
+  ],
+  template: {
+    heading: "Facade over several subsystems",
+    label: "python",
+    note: "The facade owns the sequence and error handling; callers make one call.",
+    code: `class Identity:
+    def create_user(self, email): return {"uid": 1, "email": email}
+class Billing:
+    def create_account(self, uid): return {"acct": "A-1", "uid": uid}
+class Mailer:
+    def welcome(self, email): return f"sent welcome to {email}"
+
+class Onboarding:
+    def __init__(self):
+        self.identity, self.billing, self.mailer = Identity(), Billing(), Mailer()
+
+    def onboard(self, email):
+        user = self.identity.create_user(email)
+        acct = self.billing.create_account(user["uid"])
+        note = self.mailer.welcome(email)
+        return {"user": user, "account": acct, "email": note}
+
+print(Onboarding().onboard("ada@example.com"))`,
+  },
+  examples: [
+    {
+      title: "A module as a facade",
+      prompt: "No class needed: expose two functions and keep the rest private.",
+      code: `# reports.py (imagine this file)
+def _fetch_rows(source):      return [{"amount": 10}, {"amount": 15}]
+def _summarize(rows):         return sum(r["amount"] for r in rows)
+
+def monthly_total(source):
+    """Public entry point. Callers never touch fetch/summarize."""
+    return _summarize(_fetch_rows(source))
+
+print(monthly_total("orders_db"))`,
+      explanation: "Leading underscores mark internals. Callers get one stable function, so the internals can be reorganized or replaced without breaking anyone.",
+      output: "25",
+    },
+    {
+      title: "Facade with partial-failure handling",
+      prompt: "Multi-step operations can fail midway. A good facade decides what to undo.",
+      code: `class Steps:
+    def __init__(self): self.done = []
+    def a(self): self.done.append("a")
+    def b(self): raise RuntimeError("b failed")
+    def undo_a(self): self.done.remove("a")
+
+def run(steps):
+    try:
+        steps.a()
+        steps.b()
+    except Exception:
+        steps.undo_a()                 # compensate the step that succeeded
+        raise
+
+s = Steps()
+try:
+    run(s)
+except RuntimeError as e:
+    print("error:", e, "| state:", s.done)`,
+      explanation: "The facade is the right place to own ordering and compensation (undo), because callers of a simple <code>onboard()</code> can't be expected to know which sub-steps to roll back.",
+      output: "error: b failed | state: []",
+    },
+  ],
+  gotchas: [
+    "A facade that grows into a god-class with all the logic. It should coordinate, not contain the business rules.",
+    "Hiding failures: return clear errors that say which step failed.",
+    "Forcing all callers through it. Leave the subsystem reachable for power users.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Add a fourth subsystem call to <code>onboard()</code> and handle its failure with a compensation step.",
+    "Turn the <code>Onboarding</code> class into a module of functions and compare.",
+    "Write a fake for each subsystem and test the facade without the network.",
+  ],
+  quiz: [
+    {
+      question: "What is a Facade?",
+      options: [
+        "A simple interface in front of a complex subsystem",
+        "A way to create one instance",
+        "A wrapper that changes behavior of one object",
+        "A queue",
+      ],
+      correct: 0,
+      explanation: "It exposes the few operations most callers need and hides orchestration details.",
+    },
+    {
+      question: "Which Python construct can act as a facade without a class?",
+      options: [
+        "A module exposing a few public functions",
+        "A metaclass",
+        "A global variable",
+        "A lambda in a loop",
+      ],
+      correct: 0,
+      explanation: "Modules are namespaces; a few public functions with private helpers make a natural facade.",
+    },
+    {
+      question: "Where should multi-step rollback logic live?",
+      options: [
+        "In the facade, which owns the sequence",
+        "In each caller",
+        "In the database only",
+        "Nowhere",
+      ],
+      correct: 0,
+      explanation: "Callers of a simple method shouldn't need to know internal steps to undo.",
+    },
+    {
+      question: "How does a Facade differ from an Adapter?",
+      options: [
+        "A facade simplifies a subsystem; an adapter converts one interface to another",
+        "They are identical",
+        "Facades are only for databases",
+        "Adapters are only for UI",
+      ],
+      correct: 0,
+      explanation: "Facade = simpler front door. Adapter = interface translation.",
+    },
+    {
+      question: "What is a risk of a facade?",
+      options: [
+        "Becoming a god-class that holds all the business logic",
+        "It makes code slower by 10x",
+        "It prevents testing",
+        "It requires Java",
+      ],
+      correct: 0,
+      explanation: "Facades should coordinate collaborators rather than absorb their responsibilities.",
+    },
+  ],
+  id: "facade",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

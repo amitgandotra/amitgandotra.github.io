@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Arrays & Hashing — Becoming FDE</title>
+<title>Hashing &amp; Frequency Counting — Becoming FDE</title>
 <link rel="stylesheet" href="../../css/style.css" />
 </head>
 <body>
@@ -11,11 +11,6 @@
 <header class="site-header">
   <div class="container">
     <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
-    <nav class="site-nav">
-      <a href="../python/index.html">Python</a>
-      <a href="index.html" class="active">DSA</a>
-      <a href="../../index.html">All Topics</a>
-    </nav>
   </div>
 </header>
 
@@ -35,9 +30,9 @@
   <div class="container">Becoming FDE — build in public, ship in prod.</div>
 </footer>
 
-<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/data/site.js"></script>
 <script src="../../js/progress.js"></script>
-<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/site-shell.js"></script>
 <script src="../../js/highlight.js"></script>
 <script src="../../js/quiz.js"></script>
 <script>
@@ -89,13 +84,48 @@ const PAGE_DATA = {
     },
   ],
   practiceProblems: [
-    "Two Sum",
-    "Contains Duplicate",
-    "Valid Anagram",
-    "Group Anagrams",
-    "Top K Frequent Elements",
-    "Product of Array Except Self",
-    "Longest Consecutive Sequence",
+    {
+      n: 217,
+      title: "Contains Duplicate",
+      slug: "contains-duplicate",
+      level: "Easy",
+    },
+    {
+      n: 242,
+      title: "Valid Anagram",
+      slug: "valid-anagram",
+      level: "Easy",
+    },
+    {
+      n: 1,
+      title: "Two Sum",
+      slug: "two-sum",
+      level: "Easy",
+    },
+    {
+      n: 387,
+      title: "First Unique Character in a String",
+      slug: "first-unique-character-in-a-string",
+      level: "Easy",
+    },
+    {
+      n: 49,
+      title: "Group Anagrams",
+      slug: "group-anagrams",
+      level: "Medium",
+    },
+    {
+      n: 347,
+      title: "Top K Frequent Elements",
+      slug: "top-k-frequent-elements",
+      level: "Medium",
+    },
+    {
+      n: 128,
+      title: "Longest Consecutive Sequence",
+      slug: "longest-consecutive-sequence",
+      level: "Medium",
+    },
   ],
   quiz: [
     {
@@ -112,23 +142,13 @@ const PAGE_DATA = {
     },
     {
       question: "In Two Sum, why check for the complement before inserting the current number into the map?",
-      options: [
-        "It doesn't matter, order is irrelevant",
-        "To avoid pairing an element with itself",
-        "To keep the map sorted",
-        "To save memory",
-      ],
+      options: ["It doesn't matter, order is irrelevant", "To avoid pairing an element with itself", "To keep the map sorted", "To save memory"],
       correct: 1,
       explanation: "Checking first ensures you never pair an element with itself when target equals 2 * nums[i].",
     },
     {
       question: "Which problem is the worst fit for a plain hashmap-based approach?",
-      options: [
-        "Counting character frequency",
-        "Finding the running median of a stream of numbers",
-        "Detecting duplicates",
-        "Grouping anagrams",
-      ],
+      options: ["Counting character frequency", "Finding the running median of a stream of numbers", "Detecting duplicates", "Grouping anagrams"],
       correct: 1,
       explanation: "A streaming median needs an order-statistics structure like two heaps — hashmaps don't preserve rank or order.",
     },
@@ -141,6 +161,6 @@ const PAGE_DATA = {
   ],
 };
 </script>
-<script src="../../js/pattern-page.js"></script>
+<script src="../../js/topic-page.js"></script>
 </body>
 </html>

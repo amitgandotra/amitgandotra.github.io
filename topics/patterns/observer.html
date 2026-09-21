@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Observer — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html" class="active">Patterns</a>
+      <a href="../integration/index.html">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Observer lets one object (the subject) notify many others (observers) when something happens, without knowing who they are. It's in-process publish/subscribe: UI events, plugin hooks, audit logging, cache invalidation.",
+  keyHeading: "When to use it, and the Pythonic take",
+  keyPoints: [
+    "Use when one event should trigger several independent reactions and you want to add reactions without editing the emitter.",
+    "Java: Observer interface + subject with a list. Python: <strong>a list of callables</strong> is enough.",
+    "This is in-process only. Across services you want a message broker (see Enterprise Integration → Queues & Events).",
+    "Beware memory leaks: a subject holding strong references keeps observers alive. Provide unsubscribe, or use <code>weakref</code>.",
+  ],
+  template: {
+    heading: "Minimal event emitter",
+    label: "python",
+    note: "Subscribe callables, then emit an event to all of them.",
+    code: `class Emitter:
+    def __init__(self):
+        self._handlers = []
+
+    def subscribe(self, fn):
+        self._handlers.append(fn)
+        return lambda: self._handlers.remove(fn)     # returns an unsubscribe function
+
+    def emit(self, *args, **kwargs):
+        for fn in list(self._handlers):              # copy: handlers may unsubscribe
+            fn(*args, **kwargs)`,
+  },
+  examples: [
+    {
+      title: "Order events with independent listeners",
+      prompt: "When an order is placed, log it, update inventory, and notify billing. The order code knows none of them.",
+      code: `class Emitter:
+    def __init__(self):
+        self._handlers = []
+    def subscribe(self, fn):
+        self._handlers.append(fn)
+    def emit(self, *a):
+        for fn in self._handlers:
+            fn(*a)
+
+order_placed = Emitter()
+log = []
+
+order_placed.subscribe(lambda oid: log.append(f"audit:{oid}"))
+order_placed.subscribe(lambda oid: log.append(f"inventory:{oid}"))
+order_placed.subscribe(lambda oid: log.append(f"billing:{oid}"))
+
+order_placed.emit(1042)
+print(log)`,
+      explanation: "The emitter loops over handlers. Adding a fourth reaction means one more <code>subscribe</code>; the order code stays untouched. That's the open/closed principle in practice.",
+      output: "['audit:1042', 'inventory:1042', 'billing:1042']",
+    },
+    {
+      title: "Isolating a failing observer",
+      prompt: "One broken listener shouldn't stop the others from being notified.",
+      code: `def emit_safely(handlers, event):
+    errors = []
+    for fn in handlers:
+        try:
+            fn(event)
+        except Exception as exc:          # a real system would log this
+            errors.append((fn.__name__, str(exc)))
+    return errors
+
+def good(e):  print("ok", e)
+def bad(e):   raise RuntimeError("boom")
+
+print(emit_safely([bad, good], "evt"))`,
+      explanation: "Without the try/except, <code>bad</code> would abort the loop and <code>good</code> would never run. Decide deliberately whether a failing observer should be swallowed and logged, retried, or propagated.",
+      output: "ok evt / [('bad', 'boom')]",
+    },
+  ],
+  gotchas: [
+    "Mutating the handler list while iterating (unsubscribing inside a handler). Iterate over a copy.",
+    "Order dependence: don't rely on observer order unless you document and test it.",
+    "Strong references keep observers alive after you think they are gone. Unsubscribe explicitly.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Add an <code>unsubscribe</code> and prove a removed handler stops receiving events.",
+    "Make the emitter use <code>weakref.WeakMethod</code> for bound methods.",
+    "Add event names so one emitter supports 'created' and 'deleted' handlers.",
+  ],
+  quiz: [
+    {
+      question: "What problem does Observer solve?",
+      options: [
+        "Notifying many independent listeners without the emitter knowing them",
+        "Creating one shared instance",
+        "Adapting an interface",
+        "Building a complex object stepwise",
+      ],
+      correct: 0,
+      explanation: "The subject only knows a list of callbacks, so listeners can be added or removed freely.",
+    },
+    {
+      question: "What is the simplest Python observer?",
+      options: [
+        "A list of callables the subject invokes",
+        "A metaclass",
+        "A private constructor",
+        "A thread pool",
+      ],
+      correct: 0,
+      explanation: "Callables are first-class, so no Observer interface is needed.",
+    },
+    {
+      question: "Why iterate over a copy of the handler list?",
+      options: [
+        "A handler might unsubscribe itself during emit, changing the list mid-iteration",
+        "Copies are faster",
+        "Python forbids iterating originals",
+        "It sorts the handlers",
+      ],
+      correct: 0,
+      explanation: "Modifying a list while looping over it can skip items or raise errors.",
+    },
+    {
+      question: "How does an in-process Observer differ from a message queue?",
+      options: [
+        "It only works inside one process and offers no durability or delivery guarantees",
+        "It is always more reliable",
+        "It works across machines",
+        "There is no difference",
+      ],
+      correct: 0,
+      explanation: "Callbacks vanish with the process. Queues add persistence and cross-service delivery.",
+    },
+    {
+      question: "What should happen when one observer raises an error?",
+      options: [
+        "A deliberate choice: isolate and log, retry, or propagate. Don't let it silently break the others by accident",
+        "Always crash",
+        "Always ignore",
+        "Delete the observer",
+      ],
+      correct: 0,
+      explanation: "Failure handling must be designed; the default of aborting the loop is usually accidental.",
+    },
+  ],
+  id: "observer",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

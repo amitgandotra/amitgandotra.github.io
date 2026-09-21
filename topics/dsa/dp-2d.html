@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>2-D Dynamic Programming — Becoming FDE</title>
+<title>Dynamic Programming: 2-D — Becoming FDE</title>
 <link rel="stylesheet" href="../../css/style.css" />
 </head>
 <body>
@@ -11,11 +11,6 @@
 <header class="site-header">
   <div class="container">
     <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
-    <nav class="site-nav">
-      <a href="../python/index.html">Python</a>
-      <a href="index.html" class="active">DSA</a>
-      <a href="../../index.html">All Topics</a>
-    </nav>
   </div>
 </header>
 
@@ -35,9 +30,9 @@
   <div class="container">Becoming FDE — build in public, ship in prod.</div>
 </footer>
 
-<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/data/site.js"></script>
 <script src="../../js/progress.js"></script>
-<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/site-shell.js"></script>
 <script src="../../js/highlight.js"></script>
 <script src="../../js/quiz.js"></script>
 <script>
@@ -109,44 +104,77 @@ const PAGE_DATA = {
     },
   ],
   practiceProblems: [
-    "Unique Paths",
-    "Longest Common Subsequence",
-    "Edit Distance",
-    "Longest Palindromic Substring",
-    "0/1 Knapsack",
-    "Interleaving String",
+    {
+      n: 62,
+      title: "Unique Paths",
+      slug: "unique-paths",
+      level: "Medium",
+    },
+    {
+      n: 63,
+      title: "Unique Paths II",
+      slug: "unique-paths-ii",
+      level: "Medium",
+    },
+    {
+      n: 64,
+      title: "Minimum Path Sum",
+      slug: "minimum-path-sum",
+      level: "Medium",
+    },
+    {
+      n: 1143,
+      title: "Longest Common Subsequence",
+      slug: "longest-common-subsequence",
+      level: "Medium",
+    },
+    {
+      n: 72,
+      title: "Edit Distance",
+      slug: "edit-distance",
+      level: "Medium",
+    },
+    {
+      n: 416,
+      title: "Partition Equal Subset Sum",
+      slug: "partition-equal-subset-sum",
+      level: "Medium",
+    },
+    {
+      n: 518,
+      title: "Coin Change II",
+      slug: "coin-change-ii",
+      level: "Medium",
+    },
+    {
+      n: 494,
+      title: "Target Sum",
+      slug: "target-sum",
+      level: "Medium",
+    },
+    {
+      n: 97,
+      title: "Interleaving String",
+      slug: "interleaving-string",
+      level: "Medium",
+    },
   ],
   quiz: [
     {
       question: "2-D DP problems typically involve state indexed by...",
-      options: [
-        "Two variables, like two string positions or a grid cell",
-        "A single position only",
-        "No index at all",
-        "A hashmap key only",
-      ],
+      options: ["Two variables, like two string positions or a grid cell", "A single position only", "No index at all", "A hashmap key only"],
       correct: 0,
       explanation: "That's exactly the feature that distinguishes 2-D DP from 1-D DP — two independent dimensions of state.",
     },
     {
       question: "In Longest Common Subsequence, what does dp[i][j] represent?",
-      options: [
-        "The LCS length between text1[:i] and text2[:j]",
-        "The total combined length of text1 and text2",
-        "Whether text1 equals text2",
-        "The edit distance between the strings",
-      ],
+      options: ["The LCS length between text1[:i] and text2[:j]", "The total combined length of text1 and text2", "Whether text1 equals text2", "The edit distance between the strings"],
       correct: 0,
       explanation: "Each cell holds the answer for the corresponding prefixes of both strings, building up to the full answer at dp[m][n].",
     },
     {
       question: "In Edit Distance, why is dp[i][0] initialized to i?",
-      options: [
-        "Converting a string of length i to an empty string requires exactly i deletions",
-        "It's an arbitrary starting value",
-        "Because i is always 0 in this problem",
-        "To match array indexing conventions only",
-      ],
+      options: ["Converting a string of length i to an empty string requires exactly i deletions", "It's an arbitrary starting value", "Because i is always 0 in this problem", "To match array indexing conventions only"],
       correct: 0,
       explanation: "That row/column encodes the base case: transforming any prefix to/from the empty string costs exactly its length in operations.",
     },
@@ -158,18 +186,13 @@ const PAGE_DATA = {
     },
     {
       question: "How can many 2-D DP solutions be optimized in space, when dp[i][j] only depends on the previous row?",
-      options: [
-        "Roll the table down to O(min(m,n)) or O(n) by keeping only the previous row/column",
-        "They can never be optimized below O(m*n)",
-        "By switching to BFS instead",
-        "By removing the DP table and using plain recursion instead",
-      ],
+      options: ["Roll the table down to O(min(m,n)) or O(n) by keeping only the previous row/column", "They can never be optimized below O(m*n)", "By switching to BFS instead", "By removing the DP table and using plain recursion instead"],
       correct: 0,
       explanation: "If each row only needs the row above it, you never need to keep more than two rows (or even one, updated in place) alive at once.",
     },
   ],
 };
 </script>
-<script src="../../js/pattern-page.js"></script>
+<script src="../../js/topic-page.js"></script>
 </body>
 </html>

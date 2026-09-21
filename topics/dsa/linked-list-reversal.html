@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Linked List In-place Reversal — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "linked-list-reversal",
+  summary: "Reversing a linked list in place means re-pointing each node's <code>next</code> backwards while remembering the rest of the list. Partial reversals, pair swaps, palindrome checks and list reordering are all variations of the same three-pointer loop.",
+  recognize: [
+    "'Reverse a linked list', or a portion of it between two positions",
+    "Reverse in groups of k, swap nodes in pairs, rotate the list",
+    "'Palindrome linked list' or 'reorder list' in O(1) extra space",
+    "'In place' with a linked list as input",
+  ],
+  template: {
+    note: "Iterative reversal with three pointers. Save the next node before you overwrite <code>next</code>.",
+    code: `def reverse_list(head):
+    prev, curr = None, head
+    while curr:
+        nxt = curr.next          # 1. remember the rest
+        curr.next = prev         # 2. flip the link
+        prev, curr = curr, nxt   # 3. step forward
+    return prev                  # prev is the new head`,
+  },
+  examples: [
+    {
+      title: "Reverse Linked List II (a sublist)",
+      prompt: "Reverse the nodes from position <code>left</code> to position <code>right</code> (1-indexed) and leave the rest unchanged.",
+      code: `def reverse_between(head, left, right):
+    dummy = ListNode(0, head)
+    before = dummy
+    for _ in range(left - 1):
+        before = before.next                 # node just before the sublist
+    prev, curr = None, before.next
+    for _ in range(right - left + 1):
+        nxt = curr.next
+        curr.next = prev
+        prev, curr = curr, nxt
+    before.next.next = curr                  # old first node now points past the sublist
+    before.next = prev                       # 'before' points to the new sublist head
+    return dummy.next`,
+      explanation: "Walk to the node before the sublist, reverse exactly <code>right - left + 1</code> nodes with the standard loop, then reconnect both ends. The dummy head handles the case where the sublist starts at the head.",
+      complexity: "Time: O(n) · Space: O(1)",
+      complexityWhy: "At most one pass over the list: up to n steps to reach the sublist and reverse it. Only a fixed number of pointers are used.",
+    },
+    {
+      title: "Swap Nodes in Pairs",
+      prompt: "Swap every two adjacent nodes by <strong>changing links</strong>, not values.",
+      code: `def swap_pairs(head):
+    dummy = ListNode(0, head)
+    prev = dummy
+    while prev.next and prev.next.next:
+        first, second = prev.next, prev.next.next
+        first.next = second.next           # first now skips over second
+        second.next = first                # second points back to first
+        prev.next = second                 # previous node points to the new front
+        prev = first                       # first is now the tail of this pair
+    return dummy.next`,
+      explanation: "Each iteration reverses one pair locally with three link updates and then moves <code>prev</code> to the tail of the pair. It is the same re-pointing idea as full reversal, applied to windows of two.",
+      complexity: "Time: O(n) · Space: O(1)",
+      complexityWhy: "Each pair is processed once with a constant number of pointer updates, and no extra memory is allocated.",
+    },
+  ],
+  gotchas: [
+    "Overwriting <code>curr.next</code> before saving it loses the rest of the list. Always save <code>nxt</code> first.",
+    "For partial reversals, forgetting to reconnect the node before the sublist and the node after it.",
+    "Returning <code>head</code> instead of <code>prev</code> (the new head) or <code>dummy.next</code>.",
+    "Recursive reversal uses O(n) stack space and can hit Python's recursion limit on long lists.",
+  ],
+  practiceProblems: [
+    {
+      n: 206,
+      title: "Reverse Linked List",
+      slug: "reverse-linked-list",
+      level: "Easy",
+    },
+    {
+      n: 21,
+      title: "Merge Two Sorted Lists",
+      slug: "merge-two-sorted-lists",
+      level: "Easy",
+    },
+    {
+      n: 234,
+      title: "Palindrome Linked List",
+      slug: "palindrome-linked-list",
+      level: "Easy",
+    },
+    {
+      n: 92,
+      title: "Reverse Linked List II",
+      slug: "reverse-linked-list-ii",
+      level: "Medium",
+    },
+    {
+      n: 24,
+      title: "Swap Nodes in Pairs",
+      slug: "swap-nodes-in-pairs",
+      level: "Medium",
+    },
+    {
+      n: 143,
+      title: "Reorder List",
+      slug: "reorder-list",
+      level: "Medium",
+    },
+    {
+      n: 25,
+      title: "Reverse Nodes in k-Group",
+      slug: "reverse-nodes-in-k-group",
+      level: "Hard",
+    },
+  ],
+  quiz: [
+    {
+      question: "Why must you save curr.next in a temporary variable before reversing the link?",
+      options: ["Overwriting curr.next would lose the rest of the list", "Python requires a temporary variable", "It makes the loop faster", "To avoid a syntax error"],
+      correct: 0,
+      explanation: "Once curr.next points backwards, the only reference to the remaining nodes is the saved one.",
+    },
+    {
+      question: "What is the space complexity of iterative in-place reversal?",
+      options: ["O(1)", "O(n)", "O(log n)", "O(n^2)"],
+      correct: 0,
+      explanation: "Only three pointers are used regardless of the list length.",
+    },
+    {
+      question: "Why use a dummy node in Reverse Linked List II?",
+      options: ["The sublist may begin at the head, and the dummy gives a uniform 'node before' to reconnect to", "It makes the list circular", "It reverses the list automatically", "It is required by Python"],
+      correct: 0,
+      explanation: "With a dummy, the case left = 1 needs no special handling.",
+    },
+    {
+      question: "How do you check for a palindrome linked list in O(1) extra space?",
+      options: ["Find the middle with fast/slow pointers, reverse the second half, and compare the halves", "Copy into an array and compare", "Use a stack of all values", "Sort the list"],
+      correct: 0,
+      explanation: "Reversing the second half in place lets you compare from both ends without extra memory.",
+    },
+    {
+      question: "What is the stack space of the recursive reversal for a list of n nodes?",
+      options: ["O(n)", "O(1)", "O(log n)", "O(n log n)"],
+      correct: 0,
+      explanation: "Each node adds a frame to the call stack until the end is reached.",
+    },
+  ],
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

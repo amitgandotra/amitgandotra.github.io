@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Queues &amp; Event-Driven Integration — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html">Patterns</a>
+      <a href="../integration/index.html" class="active">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Queues and pub/sub decouple systems in time: the producer hands off a message and moves on, and the consumer processes it when it can. This absorbs spikes and outages, but introduces at-least-once delivery, duplicates, ordering questions, and poison messages you must handle deliberately.",
+  keyHeading: "Core ideas",
+  keyPoints: [
+    "<strong>Queue (point-to-point)</strong>: each message is processed by one consumer. Good for work distribution.",
+    "<strong>Topic (pub/sub)</strong>: each message is delivered to every subscriber. Good for broadcasting events.",
+    "<strong>Ack / nack</strong>: a message is removed only after the consumer acknowledges success. If it crashes first, the message is redelivered.",
+    "<strong>At-least-once</strong> is the common guarantee, so consumers must be idempotent. (True exactly-once end-to-end is very hard.)",
+    "<strong>Dead-letter queue (DLQ)</strong>: messages that fail repeatedly go aside for inspection, instead of blocking the queue forever.",
+    "Real brokers: RabbitMQ, Kafka, SQS/SNS, Pub/Sub, Azure Service Bus. The concepts transfer.",
+  ],
+  template: {
+    heading: "A tiny broker with ack and retries",
+    label: "python",
+    note: "In-memory simulation of the semantics real brokers give you.",
+    code: `from collections import deque
+
+class Queue:
+    def __init__(self, max_attempts=3):
+        self.items = deque()          # entries: [message, attempts]
+        self.dead = []                # dead-letter queue
+        self.max_attempts = max_attempts
+
+    def send(self, message):
+        self.items.append([message, 0])
+
+    def process(self, handler):
+        while self.items:
+            entry = self.items.popleft()
+            message, attempts = entry
+            try:
+                handler(message)               # success == ack: message is gone
+            except Exception:
+                entry[1] = attempts + 1
+                if entry[1] >= self.max_attempts:
+                    self.dead.append(message)  # give up: dead-letter it
+                else:
+                    self.items.append(entry)   # nack: redeliver later`,
+  },
+  examples: [
+    {
+      title: "Retry then dead-letter a poison message",
+      prompt: "One bad message must not block good ones.",
+      code: `from collections import deque
+
+class Queue:
+    def __init__(self, max_attempts=3):
+        self.items, self.dead, self.max_attempts = deque(), [], max_attempts
+    def send(self, m): self.items.append([m, 0])
+    def process(self, handler):
+        while self.items:
+            entry = self.items.popleft()
+            try:
+                handler(entry[0])
+            except Exception:
+                entry[1] += 1
+                (self.dead if entry[1] >= self.max_attempts else self.items).append(
+                    entry[0] if entry[1] >= self.max_attempts else entry)
+
+done = []
+def handler(msg):
+    if msg == "bad":
+        raise ValueError("cannot parse")
+    done.append(msg)
+
+q = Queue()
+for m in ["a", "bad", "b"]:
+    q.send(m)
+q.process(handler)
+print("processed:", done)
+print("dead-lettered:", q.dead)`,
+      explanation: "'bad' fails three times and lands in the DLQ; 'a' and 'b' are processed normally. Someone (or an alert) then inspects the DLQ to fix the data or the parser and replay.",
+      output: "processed: ['a', 'b'] / dead-lettered: ['bad']",
+    },
+    {
+      title: "Pub/sub fan-out with an idempotent consumer",
+      prompt: "Every subscriber gets each event; a redelivered event must not be applied twice.",
+      code: `class Topic:
+    def __init__(self):
+        self.subs = []
+    def subscribe(self, fn):
+        self.subs.append(fn)
+    def publish(self, event):
+        for fn in self.subs:
+            fn(event)
+
+class BillingConsumer:
+    def __init__(self):
+        self.seen, self.total = set(), 0
+    def __call__(self, event):
+        if event["id"] in self.seen:
+            return                      # duplicate delivery
+        self.seen.add(event["id"])
+        self.total += event["amount"]
+
+billing = BillingConsumer()
+audit = []
+topic = Topic()
+topic.subscribe(billing)
+topic.subscribe(lambda e: audit.append(e["id"]))
+
+evt = {"id": "e1", "amount": 30}
+topic.publish(evt)
+topic.publish(evt)         # broker redelivered
+print(billing.total, audit)`,
+      explanation: "Billing de-duplicates by event ID so the redelivery is harmless; the audit subscriber records both deliveries because it doesn't need idempotency. Each consumer owns its own duplicate handling.",
+      output: "30 ['e1', 'e1']",
+    },
+  ],
+  gotchas: [
+    "Acknowledging before doing the work: a crash loses the message.",
+    "Non-idempotent consumers with at-least-once delivery: duplicates corrupt data.",
+    "No DLQ: one poison message is retried forever and blocks everything behind it.",
+    "Assuming global ordering. Most brokers only guarantee order within a partition or key.",
+    "Unbounded queue growth going unnoticed. Monitor queue depth and age of oldest message.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Add exponential delay between redeliveries in the tiny broker.",
+    "Add a <code>replay_dead_letters()</code> method that re-queues dead messages after a fix.",
+    "Explain how you'd preserve per-customer ordering while processing in parallel (hint: key partitioning).",
+  ],
+  quiz: [
+    {
+      question: "What does at-least-once delivery imply for consumers?",
+      options: [
+        "They must tolerate duplicates (be idempotent)",
+        "Messages are never duplicated",
+        "Messages may be lost",
+        "Ordering is guaranteed",
+      ],
+      correct: 0,
+      explanation: "Redelivery after failures means the same message can arrive more than once.",
+    },
+    {
+      question: "What is a dead-letter queue?",
+      options: [
+        "Where repeatedly failing messages are set aside for inspection",
+        "A queue for finished messages",
+        "A faster queue",
+        "An encrypted queue",
+      ],
+      correct: 0,
+      explanation: "It prevents poison messages from blocking healthy traffic.",
+    },
+    {
+      question: "When should a consumer acknowledge a message?",
+      options: [
+        "After successfully processing it",
+        "As soon as it is received",
+        "Never",
+        "Before parsing",
+      ],
+      correct: 0,
+      explanation: "Acking early risks losing the message if the consumer crashes mid-work.",
+    },
+    {
+      question: "Queue vs topic: which delivers each message to all subscribers?",
+      options: ["Topic (pub/sub)", "Queue", "Neither", "Both equally"],
+      correct: 0,
+      explanation: "Queues distribute work to one consumer; topics broadcast to every subscriber.",
+    },
+    {
+      question: "What ordering do most brokers guarantee?",
+      options: [
+        "Order within a partition/key, not globally",
+        "Global order always",
+        "No order at all ever",
+        "Reverse order",
+      ],
+      correct: 0,
+      explanation: "Strict global ordering limits throughput; systems partition by key instead.",
+    },
+  ],
+  id: "messaging",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

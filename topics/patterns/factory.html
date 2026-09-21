@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Factory — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html" class="active">Patterns</a>
+      <a href="../integration/index.html">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "A factory centralizes object creation so calling code asks for 'a thing of kind X' without knowing which concrete class to build. It removes big if/elif chains from callers and gives you one place to add new kinds.",
+  keyHeading: "When to use it, and the Pythonic take",
+  keyPoints: [
+    "Use when the concrete class depends on runtime input (a config value, a file type, a customer's system) and callers shouldn't care.",
+    "Java: Factory Method needs subclasses, Abstract Factory needs families of interfaces. Python: a <strong>function returning an instance</strong>, or a <strong>dict mapping names to classes</strong>, is usually enough.",
+    "Classes are first-class objects in Python: you can store them in a dict and call them.",
+    "A <code>@classmethod</code> alternative constructor (<code>from_json</code>, <code>from_env</code>) is the Pythonic 'named factory'.",
+  ],
+  template: {
+    heading: "Registry-style factory",
+    label: "python",
+    note: "A dict from name to class. Adding a new kind means adding one entry.",
+    code: `class CsvParser:
+    def parse(self, text): return [line.split(",") for line in text.splitlines()]
+
+class PipeParser:
+    def parse(self, text): return [line.split("|") for line in text.splitlines()]
+
+PARSERS = {"csv": CsvParser, "pipe": PipeParser}
+
+def make_parser(kind):
+    try:
+        return PARSERS[kind]()
+    except KeyError:
+        raise ValueError(f"unknown parser: {kind}")`,
+  },
+  examples: [
+    {
+      title: "Factory choosing a connector by customer config",
+      prompt: "An FDE often supports several source systems behind one interface. The caller only knows the config string.",
+      code: `class PostgresSource:
+    def fetch(self): return ["pg-row-1", "pg-row-2"]
+
+class SalesforceSource:
+    def fetch(self): return ["sf-record-1"]
+
+SOURCES = {"postgres": PostgresSource, "salesforce": SalesforceSource}
+
+def make_source(config):
+    cls = SOURCES[config["type"]]
+    return cls()
+
+source = make_source({"type": "salesforce"})
+print(source.fetch())`,
+      explanation: "Calling code depends only on the <code>fetch()</code> contract. Supporting a third system means adding one class and one dict entry; no caller changes. This is the Factory Method idea without a class hierarchy.",
+      output: "['sf-record-1']",
+    },
+    {
+      title: "Alternative constructors with @classmethod",
+      prompt: "Python has one <code>__init__</code> (no overloading), so named class methods act as extra 'constructors'.",
+      code: `import json
+
+class Job:
+    def __init__(self, name, retries):
+        self.name = name
+        self.retries = retries
+
+    @classmethod
+    def from_json(cls, text):
+        data = json.loads(text)
+        return cls(data["name"], data.get("retries", 3))
+
+    @classmethod
+    def default(cls):
+        return cls("nightly-sync", 3)
+
+job = Job.from_json('{"name": "export"}')
+print(job.name, job.retries)`,
+      explanation: "This replaces Java's overloaded constructors and static factory methods. Because <code>cls</code> is passed in, subclasses that inherit these methods get instances of themselves.",
+      output: "export 3",
+    },
+  ],
+  gotchas: [
+    "Unknown keys: a bare <code>PARSERS[kind]</code> raises KeyError. Convert to a clear error listing valid options.",
+    "Over-engineering: a factory for a single concrete class adds indirection with no benefit.",
+    "Don't build the factory as a class with one method; a function is enough.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Add an <code>xml</code> parser to the registry and confirm no calling code changes.",
+    "Use a decorator to auto-register classes into <code>PARSERS</code>.",
+    "Add a <code>Job.from_env()</code> classmethod that reads environment variables.",
+  ],
+  quiz: [
+    {
+      question: "What is the main benefit of a factory?",
+      options: [
+        "Callers ask for a kind of object without knowing the concrete class",
+        "It makes objects immutable",
+        "It removes the need for classes",
+        "It speeds up the interpreter",
+      ],
+      correct: 0,
+      explanation: "Creation logic lives in one place, so callers stay decoupled from concrete classes.",
+    },
+    {
+      question: "How is a simple factory usually written in Python?",
+      options: [
+        "A function or a dict mapping names to classes",
+        "A class hierarchy with abstract creators",
+        "A metaclass",
+        "A global variable",
+      ],
+      correct: 0,
+      explanation: "Classes are objects, so a dict of name → class plus a call is often all you need.",
+    },
+    {
+      question: "Why use @classmethod alternative constructors?",
+      options: [
+        "Python has a single __init__, so named class methods provide extra ways to build an instance",
+        "They are faster than __init__",
+        "They are required for inheritance",
+        "They replace all instance methods",
+      ],
+      correct: 0,
+      explanation: "Without overloading, from_json(), from_env() etc. give clear, named construction paths.",
+    },
+    {
+      question: "What should a factory do for an unknown kind?",
+      options: [
+        "Raise a clear error naming the bad value and valid options",
+        "Return None silently",
+        "Return a random class",
+        "Crash the interpreter",
+      ],
+      correct: 0,
+      explanation: "Failing loudly with a helpful message beats returning None and failing later somewhere else.",
+    },
+    {
+      question: "In a @classmethod factory, what does 'cls' allow?",
+      options: [
+        "Subclasses inheriting the method construct instances of themselves",
+        "Calling private methods",
+        "Skipping __init__",
+        "Static typing",
+      ],
+      correct: 0,
+      explanation: "cls refers to the class the method was called on, so subclass calls build subclass instances.",
+    },
+  ],
+  id: "factory",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

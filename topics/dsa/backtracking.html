@@ -11,11 +11,6 @@
 <header class="site-header">
   <div class="container">
     <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
-    <nav class="site-nav">
-      <a href="../python/index.html">Python</a>
-      <a href="index.html" class="active">DSA</a>
-      <a href="../../index.html">All Topics</a>
-    </nav>
   </div>
 </header>
 
@@ -35,9 +30,9 @@
   <div class="container">Becoming FDE — build in public, ship in prod.</div>
 </footer>
 
-<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/data/site.js"></script>
 <script src="../../js/progress.js"></script>
-<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/site-shell.js"></script>
 <script src="../../js/highlight.js"></script>
 <script src="../../js/quiz.js"></script>
 <script>
@@ -110,72 +105,95 @@ const PAGE_DATA = {
     },
   ],
   practiceProblems: [
-    "Subsets",
-    "Combination Sum",
-    "Permutations",
-    "Word Search",
-    "Palindrome Partitioning",
-    "N-Queens",
+    {
+      n: 78,
+      title: "Subsets",
+      slug: "subsets",
+      level: "Medium",
+    },
+    {
+      n: 90,
+      title: "Subsets II",
+      slug: "subsets-ii",
+      level: "Medium",
+    },
+    {
+      n: 46,
+      title: "Permutations",
+      slug: "permutations",
+      level: "Medium",
+    },
+    {
+      n: 39,
+      title: "Combination Sum",
+      slug: "combination-sum",
+      level: "Medium",
+    },
+    {
+      n: 40,
+      title: "Combination Sum II",
+      slug: "combination-sum-ii",
+      level: "Medium",
+    },
+    {
+      n: 17,
+      title: "Letter Combinations of a Phone Number",
+      slug: "letter-combinations-of-a-phone-number",
+      level: "Medium",
+    },
+    {
+      n: 131,
+      title: "Palindrome Partitioning",
+      slug: "palindrome-partitioning",
+      level: "Medium",
+    },
+    {
+      n: 79,
+      title: "Word Search",
+      slug: "word-search",
+      level: "Medium",
+    },
+    {
+      n: 51,
+      title: "N-Queens",
+      slug: "n-queens",
+      level: "Hard",
+    },
   ],
   quiz: [
     {
       question: "Backtracking is essentially...",
-      options: [
-        "DFS over a decision tree, undoing a choice when a branch is exhausted or invalid",
-        "BFS with a queue",
-        "Binary search on sorted data",
-        "Dynamic programming with memoization only",
-      ],
+      options: ["DFS over a decision tree, undoing a choice when a branch is exhausted or invalid", "BFS with a queue", "Binary search on sorted data", "Dynamic programming with memoization only"],
       correct: 0,
       explanation: "The recursive explore-then-undo structure is exactly depth-first search with an explicit rollback step.",
     },
     {
       question: "What's the purpose of path.pop() after the recursive call in the template?",
-      options: [
-        "Undo the last choice so the next sibling branch starts from a clean state",
-        "It's optional and has no effect on correctness",
-        "To sort the path",
-        "To free memory only, with no correctness impact",
-      ],
+      options: ["Undo the last choice so the next sibling branch starts from a clean state", "It's optional and has no effect on correctness", "To sort the path", "To free memory only, with no correctness impact"],
       correct: 0,
       explanation: "Without popping, the path would keep accumulating choices across sibling branches that shouldn't include them.",
     },
     {
       question: "In Combination Sum, why does the recursive call pass i instead of i+1?",
-      options: [
-        "Because each candidate can be reused an unlimited number of times",
-        "It's a mistake — i+1 would also be correct",
-        "To skip duplicate candidates",
-        "To guarantee sorted output",
-      ],
+      options: ["Because each candidate can be reused an unlimited number of times", "It's a mistake — i+1 would also be correct", "To skip duplicate candidates", "To guarantee sorted output"],
       correct: 0,
       explanation: "Passing i keeps the current candidate eligible for reuse in the next recursive call, which is required since reuse is allowed.",
     },
     {
       question: "Why is 'remaining < 0' checked as an early return in Combination Sum?",
-      options: [
-        "To prune a branch as soon as it can't possibly reach a valid solution, avoiding wasted exploration",
-        "It's not necessary, just a style choice",
-        "To sort the candidates",
-        "To detect duplicate combinations",
-      ],
+      options: ["To prune a branch as soon as it can't possibly reach a valid solution, avoiding wasted exploration", "It's not necessary, just a style choice", "To sort the candidates", "To detect duplicate combinations"],
       correct: 0,
       explanation: "Once the running sum overshoots the target, no further additions can bring it back — pruning here saves significant wasted work.",
     },
     {
       question: "What's the typical time complexity class of backtracking problems that generate all subsets or permutations?",
-      options: [
-        "Exponential (e.g. O(2^n) or O(n!)), since the output itself is that large",
-        "O(n log n)",
-        "O(n)",
-        "O(n^2)",
-      ],
+      options: ["Exponential (e.g. O(2^n) or O(n!)), since the output itself is that large", "O(n log n)", "O(n)", "O(n^2)"],
       correct: 0,
       explanation: "When the answer set itself has exponential size, no algorithm that enumerates it can beat exponential time.",
     },
   ],
 };
 </script>
-<script src="../../js/pattern-page.js"></script>
+<script src="../../js/topic-page.js"></script>
 </body>
 </html>

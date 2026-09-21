@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dependency Injection — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html" class="active">Patterns</a>
+      <a href="../integration/index.html">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Dependency Injection (DI) means passing an object its collaborators (database, HTTP client, clock) instead of having it create them. It keeps code testable and lets you swap a customer's real system for a fake or a different vendor without editing business logic.",
+  keyHeading: "When to use it, and the Pythonic take",
+  keyPoints: [
+    "Use whenever code reaches out to something external: network, database, filesystem, time, randomness.",
+    "Java: often a DI container (Spring). Python: usually <strong>plain constructor or function arguments</strong>. No framework needed.",
+    "Default arguments can supply the real dependency while tests pass a fake.",
+    "DI is the antidote to Singleton: instead of importing a global, receive the instance.",
+  ],
+  template: {
+    heading: "Constructor injection",
+    label: "python",
+    note: "The service doesn't know or care which client it gets.",
+    code: `class InvoiceService:
+    def __init__(self, client):
+        self.client = client            # injected
+
+    def total_due(self, customer_id):
+        invoices = self.client.list_invoices(customer_id)
+        return sum(i["amount"] for i in invoices if not i["paid"])
+
+class FakeClient:
+    def list_invoices(self, customer_id):
+        return [{"amount": 50, "paid": False}, {"amount": 20, "paid": True}]
+
+print(InvoiceService(FakeClient()).total_due(1))`,
+  },
+  examples: [
+    {
+      title: "Injecting the clock to test time-dependent logic",
+      prompt: "Code that calls <code>datetime.now()</code> directly is hard to test. Inject a function returning the time.",
+      code: `from datetime import datetime, timedelta
+
+class TokenCache:
+    def __init__(self, ttl_seconds, now=datetime.now):     # default: real clock
+        self.ttl = timedelta(seconds=ttl_seconds)
+        self.now = now
+        self._issued = None
+
+    def set(self):
+        self._issued = self.now()
+
+    def valid(self):
+        return self._issued is not None and self.now() - self._issued < self.ttl
+
+fake_time = [datetime(2026, 1, 1, 12, 0, 0)]
+cache = TokenCache(60, now=lambda: fake_time[0])
+cache.set()
+print(cache.valid())
+fake_time[0] += timedelta(seconds=61)
+print(cache.valid())`,
+      explanation: "The test controls time, so expiry logic can be verified instantly without sleeping. The default argument means production code doesn't change at all.",
+      output: "True / False",
+    },
+    {
+      title: "Wiring at the edge (composition root)",
+      prompt: "Build real objects in one place, at program start; everything below just receives them.",
+      code: `class HttpClient:
+    def get(self, url): return f"GET {url}"
+
+class Cache:
+    def __init__(self, inner): self.inner, self.data = inner, {}
+    def get(self, url):
+        if url not in self.data:
+            self.data[url] = self.inner.get(url)
+        return self.data[url]
+
+class App:
+    def __init__(self, client):
+        self.client = client
+    def run(self):
+        return self.client.get("/health")
+
+def main():                                   # composition root
+    client = Cache(HttpClient())
+    return App(client).run()
+
+print(main())`,
+      explanation: "Only <code>main()</code> knows the concrete classes. To run against a customer's sandbox or a fake, change the wiring in one function. DI containers automate this wiring, but in most Python projects hand-wiring stays readable.",
+      output: "GET /health",
+    },
+  ],
+  gotchas: [
+    "Default-argument trap: <code>def f(x, client=Client())</code> creates the client once at definition time. Use <code>None</code> and create inside, or pass a factory.",
+    "Injecting too many dependencies suggests the class does too much.",
+    "Mocking everything with <code>unittest.mock.patch</code> instead of injecting hides design problems.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Refactor a function that calls <code>requests.get</code> directly so the HTTP function is a parameter, then test it without network.",
+    "Write a fake client that raises on the second call and test your retry logic with it.",
+    "Replace a module-level singleton in a project with an injected instance.",
+  ],
+  quiz: [
+    {
+      question: "What is Dependency Injection?",
+      options: [
+        "Passing an object its collaborators instead of it creating them",
+        "Creating a global instance",
+        "Wrapping a class to add behavior",
+        "Building objects stepwise",
+      ],
+      correct: 0,
+      explanation: "The caller decides which implementation is used.",
+    },
+    {
+      question: "In most Python projects, how is DI usually done?",
+      options: [
+        "Plain constructor or function arguments",
+        "A mandatory container framework",
+        "Metaclasses",
+        "Global variables",
+      ],
+      correct: 0,
+      explanation: "Python's simplicity means hand-wiring is normally enough.",
+    },
+    {
+      question: "Why inject the clock?",
+      options: [
+        "So time-dependent logic can be tested without waiting",
+        "To speed up datetime",
+        "Because datetime is deprecated",
+        "To avoid imports",
+      ],
+      correct: 0,
+      explanation: "A fake clock makes expiry tests deterministic and instant.",
+    },
+    {
+      question: "What is a composition root?",
+      options: [
+        "The single place where real objects are created and wired together",
+        "The root class of all classes",
+        "A database table",
+        "A test file",
+      ],
+      correct: 0,
+      explanation: "Keeping construction at the edge leaves the rest of the code dependency-agnostic.",
+    },
+    {
+      question: "What is wrong with def f(client=Client())?",
+      options: [
+        "The default is created once at definition time and shared across calls",
+        "Nothing",
+        "It's a syntax error",
+        "It disables injection",
+      ],
+      correct: 0,
+      explanation: "Default values are evaluated once; use None and create inside, or pass a factory.",
+    },
+  ],
+  id: "dependency-injection",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

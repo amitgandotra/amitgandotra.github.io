@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Heap / Priority Queue — Becoming FDE</title>
+<title>Top K Elements (Heap) — Becoming FDE</title>
 <link rel="stylesheet" href="../../css/style.css" />
 </head>
 <body>
@@ -11,11 +11,6 @@
 <header class="site-header">
   <div class="container">
     <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
-    <nav class="site-nav">
-      <a href="../python/index.html">Python</a>
-      <a href="index.html" class="active">DSA</a>
-      <a href="../../index.html">All Topics</a>
-    </nav>
   </div>
 </header>
 
@@ -35,9 +30,9 @@
   <div class="container">Becoming FDE — build in public, ship in prod.</div>
 </footer>
 
-<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/data/site.js"></script>
 <script src="../../js/progress.js"></script>
-<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/site-shell.js"></script>
 <script src="../../js/highlight.js"></script>
 <script src="../../js/quiz.js"></script>
 <script>
@@ -102,12 +97,54 @@ def merge_k_lists(lists):
     },
   ],
   practiceProblems: [
-    "Kth Largest Element in an Array",
-    "Top K Frequent Elements",
-    "K Closest Points to Origin",
-    "Task Scheduler",
-    "Merge k Sorted Lists",
-    "Find Median from Data Stream",
+    {
+      n: 703,
+      title: "Kth Largest Element in a Stream",
+      slug: "kth-largest-element-in-a-stream",
+      level: "Easy",
+    },
+    {
+      n: 1046,
+      title: "Last Stone Weight",
+      slug: "last-stone-weight",
+      level: "Easy",
+    },
+    {
+      n: 215,
+      title: "Kth Largest Element in an Array",
+      slug: "kth-largest-element-in-an-array",
+      level: "Medium",
+    },
+    {
+      n: 347,
+      title: "Top K Frequent Elements",
+      slug: "top-k-frequent-elements",
+      level: "Medium",
+    },
+    {
+      n: 973,
+      title: "K Closest Points to Origin",
+      slug: "k-closest-points-to-origin",
+      level: "Medium",
+    },
+    {
+      n: 621,
+      title: "Task Scheduler",
+      slug: "task-scheduler",
+      level: "Medium",
+    },
+    {
+      n: 23,
+      title: "Merge k Sorted Lists",
+      slug: "merge-k-sorted-lists",
+      level: "Hard",
+    },
+    {
+      n: 295,
+      title: "Find Median from Data Stream",
+      slug: "find-median-from-data-stream",
+      level: "Hard",
+    },
   ],
   quiz: [
     {
@@ -118,12 +155,7 @@ def merge_k_lists(lists):
     },
     {
       question: "To find the k largest elements efficiently with a heap, what do you maintain?",
-      options: [
-        "A min-heap of size k, popping whenever it exceeds size k",
-        "A max-heap of size n",
-        "A min-heap of size n",
-        "A stack of size k",
-      ],
+      options: ["A min-heap of size k, popping whenever it exceeds size k", "A max-heap of size n", "A min-heap of size n", "A stack of size k"],
       correct: 0,
       explanation: "Capping a min-heap at size k means the smallest of the current top-k is always at the root, ready to be evicted when a larger element arrives.",
     },
@@ -135,12 +167,7 @@ def merge_k_lists(lists):
     },
     {
       question: "In Merge k Sorted Lists, why does the heap entry need a tiebreaker (like list index) alongside the node value?",
-      options: [
-        "ListNode objects aren't directly comparable when values tie, so Python's heap comparison would error",
-        "It's purely optional and never actually needed",
-        "To keep the heap sorted by index only",
-        "To avoid using O(k) space",
-      ],
+      options: ["ListNode objects aren't directly comparable when values tie, so Python's heap comparison would error", "It's purely optional and never actually needed", "To keep the heap sorted by index only", "To avoid using O(k) space"],
       correct: 0,
       explanation: "When two node values are equal, Python falls through to comparing the next tuple element — without an index, it would try to compare ListNode objects directly and raise an error.",
     },
@@ -153,6 +180,6 @@ def merge_k_lists(lists):
   ],
 };
 </script>
-<script src="../../js/pattern-page.js"></script>
+<script src="../../js/topic-page.js"></script>
 </body>
 </html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Breadth-First Search (BFS) — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "bfs",
+  summary: "Breadth-first search explores a graph in rings, using a queue, so the first time it reaches a node is along a path with the fewest edges. That makes it the tool for shortest paths in unweighted graphs, level-order traversal, 'minimum steps' puzzles, and spreading from several sources at once.",
+  recognize: [
+    "<strong>Minimum number of steps / moves / minutes</strong> when every move costs the same",
+    "Shortest path in an unweighted graph or grid; nearest gate/zero/exit",
+    "<strong>Level by level</strong> processing",
+    "Spreading from <em>several</em> starting points at the same time (multi-source BFS)",
+    "An implicit graph of states: one letter changed, one lock wheel turned",
+  ],
+  template: {
+    note: "Mark nodes when you <em>enqueue</em> them, not when you dequeue them.",
+    code: `from collections import deque
+
+def bfs_distance(graph, start, target):
+    queue = deque([(start, 0)])
+    seen = {start}
+    while queue:
+        node, dist = queue.popleft()
+        if node == target:
+            return dist
+        for nxt in graph[node]:
+            if nxt not in seen:
+                seen.add(nxt)                 # mark on enqueue
+                queue.append((nxt, dist + 1))
+    return -1`,
+  },
+  examples: [
+    {
+      title: "Rotting Oranges (multi-source BFS)",
+      prompt: "In a grid, rotten oranges (2) infect fresh neighbours (1) every minute. Return the <strong>minimum minutes</strong> until none are fresh, or <code>-1</code>.",
+      code: `from collections import deque
+
+def oranges_rotting(grid):
+    rows, cols = len(grid), len(grid[0])
+    queue, fresh = deque(), 0
+    for r in range(rows):
+        for c in range(cols):
+            if grid[r][c] == 2:
+                queue.append((r, c))             # all rotten oranges start together
+            elif grid[r][c] == 1:
+                fresh += 1
+    minutes = 0
+    while queue and fresh:
+        for _ in range(len(queue)):              # one BFS level == one minute
+            r, c = queue.popleft()
+            for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 1:
+                    grid[nr][nc] = 2
+                    fresh -= 1
+                    queue.append((nr, nc))
+        minutes += 1
+    return minutes if fresh == 0 else -1`,
+      explanation: "Start the BFS from every rotten orange at once. Processing the queue one level at a time counts minutes. If fresh oranges remain when the queue empties, they were unreachable.",
+      complexity: "Time: O(rows × cols) · Space: O(rows × cols)",
+      complexityWhy: "Each cell is enqueued at most once and examined a constant number of times. The queue can hold a large part of the grid at once.",
+    },
+    {
+      title: "Word Ladder (an implicit graph)",
+      prompt: "Transform <code>begin</code> into <code>end</code> by changing <strong>one letter at a time</strong>, where every intermediate word must be in a word list. Return the length of the <strong>shortest</strong> sequence, or 0.",
+      code: `from collections import deque
+
+def ladder_length(begin, end, word_list):
+    words = set(word_list)
+    if end not in words:
+        return 0
+    queue = deque([(begin, 1)])
+    seen = {begin}
+    while queue:
+        word, steps = queue.popleft()
+        if word == end:
+            return steps
+        for i in range(len(word)):
+            for ch in "abcdefghijklmnopqrstuvwxyz":
+                nxt = word[:i] + ch + word[i + 1:]
+                if nxt in words and nxt not in seen:
+                    seen.add(nxt)
+                    queue.append((nxt, steps + 1))
+    return 0`,
+      explanation: "Words are nodes and two words are adjacent if they differ by one letter. You never build the graph: generate the neighbours on demand. Because every edge costs one step, BFS finds the shortest ladder.",
+      complexity: "Time: O(N · L² · 26) · Space: O(N · L)",
+      complexityWhy: "For each of N words and each of L positions, 26 candidate letters are tried, and building each candidate word (slicing and hashing) costs O(L). The seen set and queue hold up to N words of length L.",
+    },
+  ],
+  gotchas: [
+    "Marking visited when you <em>dequeue</em> lets the same node be queued many times. Mark on enqueue.",
+    "<code>list.pop(0)</code> is O(n). Use <code>collections.deque</code>.",
+    "BFS is only correct for shortest paths when all edges cost the same. Weighted graphs need Dijkstra.",
+    "To count levels, process <code>len(queue)</code> nodes per round, or carry the distance in the queue entries.",
+  ],
+  practiceProblems: [
+    {
+      n: 111,
+      title: "Minimum Depth of Binary Tree",
+      slug: "minimum-depth-of-binary-tree",
+      level: "Easy",
+    },
+    {
+      n: 102,
+      title: "Binary Tree Level Order Traversal",
+      slug: "binary-tree-level-order-traversal",
+      level: "Medium",
+    },
+    {
+      n: 752,
+      title: "Open the Lock",
+      slug: "open-the-lock",
+      level: "Medium",
+    },
+    {
+      n: 1091,
+      title: "Shortest Path in Binary Matrix",
+      slug: "shortest-path-in-binary-matrix",
+      level: "Medium",
+    },
+    {
+      n: 994,
+      title: "Rotting Oranges",
+      slug: "rotting-oranges",
+      level: "Medium",
+    },
+    {
+      n: 542,
+      title: "01 Matrix",
+      slug: "01-matrix",
+      level: "Medium",
+    },
+    {
+      n: 286,
+      title: "Walls and Gates",
+      slug: "walls-and-gates",
+      level: "Medium",
+      premium: true,
+    },
+    {
+      n: 127,
+      title: "Word Ladder",
+      slug: "word-ladder",
+      level: "Hard",
+    },
+  ],
+  quiz: [
+    {
+      question: "Why does BFS give the shortest path in an unweighted graph?",
+      options: ["It visits nodes in order of their distance, so the first arrival uses the fewest edges", "It is faster than DFS", "It always uses less memory", "It sorts the edges first"],
+      correct: 0,
+      explanation: "The queue processes all nodes at distance d before any at distance d + 1.",
+    },
+    {
+      question: "When should you mark a node as visited in BFS?",
+      options: ["When you enqueue it", "When you dequeue it", "After the whole BFS finishes", "Never"],
+      correct: 0,
+      explanation: "Marking on enqueue prevents the same node from being added to the queue multiple times.",
+    },
+    {
+      question: "What is 'multi-source BFS'?",
+      options: ["Starting the queue with several source nodes at distance 0, so they spread simultaneously", "Running BFS several times and adding the results", "BFS on several graphs", "BFS with several queues"],
+      correct: 0,
+      explanation: "Rotting Oranges seeds the queue with every rotten orange, so each level is one minute for all of them.",
+    },
+    {
+      question: "Which problem needs Dijkstra instead of plain BFS?",
+      options: ["Shortest path where edges have different costs", "Shortest path in a maze with equal-cost moves", "Level-order traversal", "Word Ladder"],
+      correct: 0,
+      explanation: "BFS counts edges, not total weight.",
+    },
+    {
+      question: "What is the worst-case space used by BFS on a graph with V vertices?",
+      options: ["O(V)", "O(1)", "O(log V)", "O(V^2) always"],
+      correct: 0,
+      explanation: "The queue and visited set can each hold up to all vertices.",
+    },
+  ],
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

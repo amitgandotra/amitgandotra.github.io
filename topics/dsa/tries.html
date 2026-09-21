@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Tries — Becoming FDE</title>
+<title>Prefix Search (Trie) — Becoming FDE</title>
 <link rel="stylesheet" href="../../css/style.css" />
 </head>
 <body>
@@ -11,11 +11,6 @@
 <header class="site-header">
   <div class="container">
     <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
-    <nav class="site-nav">
-      <a href="../python/index.html">Python</a>
-      <a href="index.html" class="active">DSA</a>
-      <a href="../../index.html">All Topics</a>
-    </nav>
   </div>
 </header>
 
@@ -35,9 +30,9 @@
   <div class="container">Becoming FDE — build in public, ship in prod.</div>
 </footer>
 
-<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/data/site.js"></script>
 <script src="../../js/progress.js"></script>
-<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/site-shell.js"></script>
 <script src="../../js/highlight.js"></script>
 <script src="../../js/quiz.js"></script>
 <script>
@@ -125,71 +120,83 @@ trie.starts_with("app")    # True — prefix exists`,
     },
   ],
   practiceProblems: [
-    "Implement Trie (Prefix Tree)",
-    "Design Add and Search Words Data Structure",
-    "Word Search II",
-    "Replace Words",
-    "Longest Word in Dictionary",
+    {
+      n: 14,
+      title: "Longest Common Prefix",
+      slug: "longest-common-prefix",
+      level: "Easy",
+    },
+    {
+      n: 208,
+      title: "Implement Trie (Prefix Tree)",
+      slug: "implement-trie-prefix-tree",
+      level: "Medium",
+    },
+    {
+      n: 211,
+      title: "Design Add and Search Words Data Structure",
+      slug: "design-add-and-search-words-data-structure",
+      level: "Medium",
+    },
+    {
+      n: 648,
+      title: "Replace Words",
+      slug: "replace-words",
+      level: "Medium",
+    },
+    {
+      n: 1268,
+      title: "Search Suggestions System",
+      slug: "search-suggestions-system",
+      level: "Medium",
+    },
+    {
+      n: 720,
+      title: "Longest Word in Dictionary",
+      slug: "longest-word-in-dictionary",
+      level: "Medium",
+    },
+    {
+      n: 212,
+      title: "Word Search II",
+      slug: "word-search-ii",
+      level: "Hard",
+    },
   ],
   quiz: [
     {
       question: "A trie node's children are typically stored as...",
-      options: [
-        "A dict/hashmap keyed by character (or a fixed-size array for a fixed alphabet)",
-        "A single linked list",
-        "A binary search tree",
-        "A stack",
-      ],
+      options: ["A dict/hashmap keyed by character (or a fixed-size array for a fixed alphabet)", "A single linked list", "A binary search tree", "A stack"],
       correct: 0,
       explanation: "Character-keyed lookup gives O(1) access to the next node while descending the trie.",
     },
     {
       question: "What's the time complexity to search for a word of length L in a trie?",
-      options: [
-        "O(L), independent of how many words are stored",
-        "O(n), where n is the number of words stored",
-        "O(L^2)",
-        "O(log n)",
-      ],
+      options: ["O(L), independent of how many words are stored", "O(n), where n is the number of words stored", "O(L^2)", "O(log n)"],
       correct: 0,
       explanation: "You walk exactly L nodes down the tree regardless of how many other words share or diverge from that path.",
     },
     {
       question: "When is a trie a better choice than a hash set of strings?",
-      options: [
-        "When you need prefix queries (startsWith, autocomplete), not just exact membership",
-        "Always — tries are strictly better in every case",
-        "Never — hash sets are always better",
-        "Only when the data is numeric",
-      ],
+      options: ["When you need prefix queries (startsWith, autocomplete), not just exact membership", "Always — tries are strictly better in every case", "Never — hash sets are always better", "Only when the data is numeric"],
       correct: 0,
       explanation: "A hash set answers 'is this exact word present' in O(1) but can't efficiently answer 'does any word start with this prefix' — that's what the trie's structure is built for.",
     },
     {
       question: "In the wildcard search for Add and Search Word, what happens when the search hits a '.' character?",
-      options: [
-        "It branches into a DFS over every child at that node",
-        "It fails immediately",
-        "It deterministically skips to the next node",
-        "It restarts the search from the root",
-      ],
+      options: ["It branches into a DFS over every child at that node", "It fails immediately", "It deterministically skips to the next node", "It restarts the search from the root"],
       correct: 0,
       explanation: "'.' means 'any character', so the search must try all children at that position and succeed if any of them lead to a match.",
     },
     {
       question: "What's the worst-case time to search a word of length L made entirely of wildcards, over a 26-letter alphabet?",
-      options: [
-        "O(26^L) in the worst case, since every level can branch",
-        "Always O(L), regardless of wildcards",
-        "O(L log L)",
-        "O(1)",
-      ],
+      options: ["O(26^L) in the worst case, since every level can branch", "Always O(L), regardless of wildcards", "O(L log L)", "O(1)"],
       correct: 0,
       explanation: "Each wildcard can branch into up to 26 children, so an all-wildcard word can explore exponentially many paths in the worst case.",
     },
   ],
 };
 </script>
-<script src="../../js/pattern-page.js"></script>
+<script src="../../js/topic-page.js"></script>
 </body>
 </html>

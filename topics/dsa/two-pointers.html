@@ -11,11 +11,6 @@
 <header class="site-header">
   <div class="container">
     <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
-    <nav class="site-nav">
-      <a href="../python/index.html">Python</a>
-      <a href="index.html" class="active">DSA</a>
-      <a href="../../index.html">All Topics</a>
-    </nav>
   </div>
 </header>
 
@@ -35,9 +30,9 @@
   <div class="container">Becoming FDE — build in public, ship in prod.</div>
 </footer>
 
-<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/data/site.js"></script>
 <script src="../../js/progress.js"></script>
-<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/site-shell.js"></script>
 <script src="../../js/highlight.js"></script>
 <script src="../../js/quiz.js"></script>
 <script>
@@ -112,43 +107,65 @@ const PAGE_DATA = {
     },
   ],
   practiceProblems: [
-    "Valid Palindrome",
-    "Two Sum II - Input Array Is Sorted",
-    "3Sum",
-    "Container With Most Water",
-    "Trapping Rain Water",
+    {
+      n: 125,
+      title: "Valid Palindrome",
+      slug: "valid-palindrome",
+      level: "Easy",
+    },
+    {
+      n: 283,
+      title: "Move Zeroes",
+      slug: "move-zeroes",
+      level: "Easy",
+    },
+    {
+      n: 167,
+      title: "Two Sum II - Input Array Is Sorted",
+      slug: "two-sum-ii-input-array-is-sorted",
+      level: "Medium",
+    },
+    {
+      n: 15,
+      title: "3Sum",
+      slug: "3sum",
+      level: "Medium",
+    },
+    {
+      n: 11,
+      title: "Container With Most Water",
+      slug: "container-with-most-water",
+      level: "Medium",
+    },
+    {
+      n: 75,
+      title: "Sort Colors",
+      slug: "sort-colors",
+      level: "Medium",
+    },
+    {
+      n: 42,
+      title: "Trapping Rain Water",
+      slug: "trapping-rain-water",
+      level: "Hard",
+    },
   ],
   quiz: [
     {
       question: "Two pointers is most naturally applied to...",
-      options: [
-        "Unsorted data with no structure",
-        "Sorted arrays or strings where you compare from both ends",
-        "Graphs with cycles",
-        "Data requiring a hashmap for O(1) lookup",
-      ],
+      options: ["Unsorted data with no structure", "Sorted arrays or strings where you compare from both ends", "Graphs with cycles", "Data requiring a hashmap for O(1) lookup"],
       correct: 1,
       explanation: "The technique relies on the ordering of sorted data to decide which pointer to move.",
     },
     {
       question: "Why sort the array first in the 3Sum pattern?",
-      options: [
-        "Sorting is required syntactically",
-        "It lets the two-pointer sweep decide which side to move based on comparison to target",
-        "It removes duplicates automatically",
-        "It's not actually necessary",
-      ],
+      options: ["Sorting is required syntactically", "It lets the two-pointer sweep decide which side to move based on comparison to target", "It removes duplicates automatically", "It's not actually necessary"],
       correct: 1,
       explanation: "Sorting establishes the order the two-pointer decision (move left up / right down) depends on.",
     },
     {
       question: "In Container With Most Water, why always move the pointer at the shorter line inward?",
-      options: [
-        "It's arbitrary, either works",
-        "The shorter line bottlenecks the area, so moving the taller one can only keep area equal or shrink it",
-        "Moving the taller line is faster to compute",
-        "It guarantees the left pointer moves first",
-      ],
+      options: ["It's arbitrary, either works", "The shorter line bottlenecks the area, so moving the taller one can only keep area equal or shrink it", "Moving the taller line is faster to compute", "It guarantees the left pointer moves first"],
       correct: 1,
       explanation: "Height is capped by the shorter side, so only moving the shorter pointer has a chance of finding a larger area.",
     },
@@ -160,18 +177,13 @@ const PAGE_DATA = {
     },
     {
       question: "The fast/slow pointer (tortoise and hare) technique is the standard approach for...",
-      options: [
-        "Binary search",
-        "Detecting a cycle in a linked list",
-        "Sorting an array",
-        "Finding the median of two sorted arrays",
-      ],
+      options: ["Binary search", "Detecting a cycle in a linked list", "Sorting an array", "Finding the median of two sorted arrays"],
       correct: 1,
       explanation: "If a fast pointer (2 steps) ever equals a slow pointer (1 step), the list contains a cycle.",
     },
   ],
 };
 </script>
-<script src="../../js/pattern-page.js"></script>
+<script src="../../js/topic-page.js"></script>
 </body>
 </html>

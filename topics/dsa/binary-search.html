@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Binary Search — Becoming FDE</title>
+<title>Binary Search &amp; Modified Binary Search — Becoming FDE</title>
 <link rel="stylesheet" href="../../css/style.css" />
 </head>
 <body>
@@ -11,11 +11,6 @@
 <header class="site-header">
   <div class="container">
     <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
-    <nav class="site-nav">
-      <a href="../python/index.html">Python</a>
-      <a href="index.html" class="active">DSA</a>
-      <a href="../../index.html">All Topics</a>
-    </nav>
   </div>
 </header>
 
@@ -35,9 +30,9 @@
   <div class="container">Becoming FDE — build in public, ship in prod.</div>
 </footer>
 
-<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/data/site.js"></script>
 <script src="../../js/progress.js"></script>
-<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/site-shell.js"></script>
 <script src="../../js/highlight.js"></script>
 <script src="../../js/quiz.js"></script>
 <script>
@@ -110,22 +105,71 @@ def min_eating_speed(piles, h):
     },
   ],
   practiceProblems: [
-    "Binary Search",
-    "Search in Rotated Sorted Array",
-    "Find Minimum in Rotated Sorted Array",
-    "Koko Eating Bananas",
-    "Median of Two Sorted Arrays",
-    "Time Based Key-Value Store",
+    {
+      n: 704,
+      title: "Binary Search",
+      slug: "binary-search",
+      level: "Easy",
+    },
+    {
+      n: 35,
+      title: "Search Insert Position",
+      slug: "search-insert-position",
+      level: "Easy",
+    },
+    {
+      n: 278,
+      title: "First Bad Version",
+      slug: "first-bad-version",
+      level: "Easy",
+    },
+    {
+      n: 34,
+      title: "Find First and Last Position of Element in Sorted Array",
+      slug: "find-first-and-last-position-of-element-in-sorted-array",
+      level: "Medium",
+    },
+    {
+      n: 33,
+      title: "Search in Rotated Sorted Array",
+      slug: "search-in-rotated-sorted-array",
+      level: "Medium",
+    },
+    {
+      n: 153,
+      title: "Find Minimum in Rotated Sorted Array",
+      slug: "find-minimum-in-rotated-sorted-array",
+      level: "Medium",
+    },
+    {
+      n: 162,
+      title: "Find Peak Element",
+      slug: "find-peak-element",
+      level: "Medium",
+    },
+    {
+      n: 875,
+      title: "Koko Eating Bananas",
+      slug: "koko-eating-bananas",
+      level: "Medium",
+    },
+    {
+      n: 1011,
+      title: "Capacity To Ship Packages Within D Days",
+      slug: "capacity-to-ship-packages-within-d-days",
+      level: "Medium",
+    },
+    {
+      n: 4,
+      title: "Median of Two Sorted Arrays",
+      slug: "median-of-two-sorted-arrays",
+      level: "Hard",
+    },
   ],
   quiz: [
     {
       question: "Binary search requires what property over the search space?",
-      options: [
-        "It must be an array of integers",
-        "Monotonicity — a predicate that flips from false to true (or vice versa)",
-        "It must be a linked list",
-        "It must contain no duplicates",
-      ],
+      options: ["It must be an array of integers", "Monotonicity — a predicate that flips from false to true (or vice versa)", "It must be a linked list", "It must contain no duplicates"],
       correct: 1,
       explanation: "As long as you can define a monotonic true/false condition over the range, you can binary search it — the range doesn't need to be a literal sorted array.",
     },
@@ -137,40 +181,25 @@ def min_eating_speed(piles, h):
     },
     {
       question: "In 'search on the answer' problems like Koko Eating Bananas, what are you binary searching over?",
-      options: [
-        "The array indices",
-        "A range of possible answer values, using a feasibility check as the comparator",
-        "A hashmap of values",
-        "A random subset of the array",
-      ],
+      options: ["The array indices", "A range of possible answer values, using a feasibility check as the comparator", "A hashmap of values", "A random subset of the array"],
       correct: 1,
       explanation: "You're not searching the input array at all — you're searching the space of possible answers (eating speeds) for the smallest one that satisfies the constraint.",
     },
     {
       question: "In rotated sorted array search, how do you know which half of the current range is sorted?",
-      options: [
-        "You can't — you have to scan linearly",
-        "Compare nums[left] to nums[mid]; whichever side is non-decreasing is sorted",
-        "Always assume the left half is sorted",
-        "Check only the middle element",
-      ],
+      options: ["You can't — you have to scan linearly", "Compare nums[left] to nums[mid]; whichever side is non-decreasing is sorted", "Always assume the left half is sorted", "Check only the middle element"],
       correct: 1,
       explanation: "A rotated sorted array always has at least one half of any subrange fully sorted; comparing the endpoints tells you which.",
     },
     {
       question: "What's a common source of off-by-one bugs in binary search?",
-      options: [
-        "Mismatching the loop condition (left <= right vs left < right) with how mid is used to update bounds",
-        "Using integer division for mid",
-        "Both of the above are common sources",
-        "Neither — binary search has no edge cases",
-      ],
+      options: ["Mismatching the loop condition (left <= right vs left < right) with how mid is used to update bounds", "Using integer division for mid", "Both of the above are common sources", "Neither — binary search has no edge cases"],
       correct: 2,
       explanation: "Both the loop condition and integer division/rounding for mid are classic places binary search implementations go subtly wrong.",
     },
   ],
 };
 </script>
-<script src="../../js/pattern-page.js"></script>
+<script src="../../js/topic-page.js"></script>
 </body>
 </html>

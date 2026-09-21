@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Data Mapping &amp; Anti-Corruption Layers — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html">Patterns</a>
+      <a href="../integration/index.html" class="active">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Every system models the world differently: 'customer' means something else in the CRM, the billing system, and yours. Data mapping translates between models. An anti-corruption layer (ACL) is a dedicated boundary that keeps a partner's odd model from leaking into your core, and it's also where schema drift gets caught.",
+  keyHeading: "Key ideas",
+  keyPoints: [
+    "Define a <strong>canonical (internal) model</strong> once. Map each external system to and from it, rather than mapping every system to every other one.",
+    "An <strong>anti-corruption layer</strong> = adapters + mappers at the boundary. Business logic only ever sees your model.",
+    "Be explicit about <strong>units, time zones, null vs empty, enums, and identifiers</strong>. These are where silent bugs live.",
+    "<strong>Schema drift</strong>: vendors add, rename, or remove fields without telling you. Detect unknown or missing fields and alert, instead of crashing or silently dropping data.",
+    "Preserve the original payload (raw) alongside the mapped record for debugging and re-mapping later.",
+    "Version your mappers so you can support old and new formats while a customer migrates.",
+  ],
+  template: {
+    heading: "Canonical model + mapper",
+    label: "python",
+    note: "The mapper is the only place that knows the vendor's field names and quirks.",
+    code: `from dataclasses import dataclass
+from datetime import datetime, timezone
+
+@dataclass(frozen=True)
+class Customer:                       # our canonical model
+    id: str
+    email: str
+    created_at: datetime              # always timezone-aware UTC
+    balance_cents: int
+
+def from_vendor_a(raw):
+    return Customer(
+        id=str(raw["CUST_ID"]),
+        email=raw["EMAIL"].strip().lower(),
+        created_at=datetime.fromtimestamp(int(raw["CREATED_TS"]), tz=timezone.utc),
+        balance_cents=round(float(raw["BALANCE_DOLLARS"]) * 100),
+    )`,
+  },
+  examples: [
+    {
+      title: "Two vendors, one model",
+      prompt: "Different field names, units, and date formats map to the same canonical record.",
+      code: `from dataclasses import dataclass
+from datetime import datetime, timezone
+
+@dataclass(frozen=True)
+class Customer:
+    id: str
+    email: str
+    created_at: datetime
+    balance_cents: int
+
+def from_vendor_a(raw):
+    return Customer(str(raw["CUST_ID"]), raw["EMAIL"].strip().lower(),
+                    datetime.fromtimestamp(int(raw["CREATED_TS"]), tz=timezone.utc),
+                    round(float(raw["BALANCE_DOLLARS"]) * 100))
+
+def from_vendor_b(raw):
+    created = datetime.strptime(raw["signup"], "%d/%m/%Y").replace(tzinfo=timezone.utc)
+    return Customer(raw["id"], raw["contact"]["email"].lower(), created, raw["balance_cents"])
+
+a = from_vendor_a({"CUST_ID": 7, "EMAIL": " Ada@X.com ", "CREATED_TS": "1700000000", "BALANCE_DOLLARS": "19.95"})
+b = from_vendor_b({"id": "9", "contact": {"email": "Bob@X.com"}, "signup": "05/03/2024", "balance_cents": 500})
+print(a.email, a.balance_cents, a.created_at.year)
+print(b.email, b.balance_cents, b.created_at.date())`,
+      explanation: "Money is normalized to integer cents (never floats in the core). Timestamps become timezone-aware UTC. Emails are normalized. Everything downstream sees a single, consistent shape.",
+      output: "ada@x.com 1995 2023 / bob@x.com 500 2024-03-05",
+    },
+    {
+      title: "Detecting schema drift",
+      prompt: "Compare an incoming record's keys with what the mapper expects and report differences instead of failing mysteriously.",
+      code: `EXPECTED = {"CUST_ID", "EMAIL", "CREATED_TS", "BALANCE_DOLLARS"}
+
+def check_drift(raw):
+    keys = set(raw)
+    return {
+        "missing": sorted(EXPECTED - keys),      # will break the mapper
+        "unknown": sorted(keys - EXPECTED),      # new fields the vendor added
+    }
+
+print(check_drift({"CUST_ID": 1, "EMAIL": "a@x.com", "CREATED_TS": 1, "LOYALTY_TIER": "gold"}))`,
+      explanation: "'missing' should fail the record (and alert); 'unknown' should usually just be logged and counted, since new optional fields are common. Trending these counts tells you a vendor changed their API before customers notice.",
+      output: "{'missing': ['BALANCE_DOLLARS'], 'unknown': ['LOYALTY_TIER']}",
+    },
+  ],
+  gotchas: [
+    "Using floats for money. Use integer minor units or Decimal.",
+    "Naive datetimes and mixed time zones. Convert to UTC at the boundary.",
+    "Mapping null, empty string, and missing as the same thing. They often mean different things.",
+    "Letting vendor field names spread through business logic, making a vendor switch a rewrite.",
+    "Dropping unmapped fields with no record. Keep the raw payload.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Add a <code>raw</code> field to <code>Customer</code> to preserve the original payload.",
+    "Write a mapper for a third vendor with nested address fields.",
+    "Raise a custom <code>MappingError</code> that includes the field name and record ID.",
+  ],
+  quiz: [
+    {
+      question: "What is a canonical model?",
+      options: [
+        "A single internal representation each external system maps to and from",
+        "The vendor's schema",
+        "A database index",
+        "A UI theme",
+      ],
+      correct: 0,
+      explanation: "It avoids N-by-N mappings between every pair of systems.",
+    },
+    {
+      question: "What does an anti-corruption layer do?",
+      options: [
+        "Keeps an external model from leaking into your core domain",
+        "Encrypts data",
+        "Speeds up queries",
+        "Deletes bad data",
+      ],
+      correct: 0,
+      explanation: "It translates at the boundary so business logic stays clean.",
+    },
+    {
+      question: "How should money be stored internally?",
+      options: [
+        "Integer minor units (cents) or Decimal, not float",
+        "As a float",
+        "As a string with $",
+        "As a date",
+      ],
+      correct: 0,
+      explanation: "Floats can't represent many decimal amounts exactly.",
+    },
+    {
+      question: "What is schema drift?",
+      options: [
+        "A partner changing fields (adding, renaming, removing) without notice",
+        "Slow disk reads",
+        "A UI bug",
+        "A cache miss",
+      ],
+      correct: 0,
+      explanation: "Sources evolve, so detection and alerting are part of the integration.",
+    },
+    {
+      question: "Why keep the raw payload?",
+      options: [
+        "For debugging and re-mapping when mappers change",
+        "It saves disk",
+        "It's required by JSON",
+        "To make data smaller",
+      ],
+      correct: 0,
+      explanation: "You can reprocess history without asking the vendor to resend.",
+    },
+  ],
+  id: "data-mapping",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

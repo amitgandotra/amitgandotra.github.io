@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Patterns, the Pythonic Way — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html" class="active">Patterns</a>
+      <a href="../integration/index.html">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Design patterns are named, reusable solutions to recurring design problems. Many were shaped by Java/C++ constraints (no first-class functions, rigid class hierarchies). In Python, some patterns collapse into language features and others stay useful. Knowing which is which is the skill.",
+  keyHeading: "Java pattern → Pythonic reality",
+  keyPoints: [
+    "<strong>Singleton</strong>: Java needs a private constructor and a static getter. Python: a module is already a singleton; a class-based one is rarely needed.",
+    "<strong>Strategy / Command</strong>: Java needs an interface plus classes. Python: pass a function (functions are objects).",
+    "<strong>Iterator</strong>: Java needs Iterator classes. Python: generators and the <code>for</code> protocol are built in.",
+    "<strong>Decorator</strong>: Java wraps objects with the same interface. Python has the pattern <em>and</em> the <code>@decorator</code> syntax for functions (two different things, covered later).",
+    "<strong>Factory, Builder, Adapter, Facade, Proxy, State, Observer, DI</strong>: still useful in Python, usually lighter (dicts of callables, dataclasses, duck typing).",
+    "Interfaces: Python has no <code>interface</code> keyword. Duck typing, <code>typing.Protocol</code>, or <code>abc.ABC</code> fill the role.",
+  ],
+  template: {
+    heading: "The three families",
+    label: "python",
+    note: "Patterns are grouped by the problem they solve. This is the vocabulary you'll use when discussing design with a customer's engineers.",
+    code: `# Creational -- how objects get made
+#   Singleton, Factory, Builder
+
+# Structural -- how objects are composed
+#   Adapter, Decorator, Facade, Proxy
+
+# Behavioral -- how objects communicate and share responsibility
+#   Strategy, Observer, Command, State
+
+# Architecture-level idea that leans on all of the above:
+#   Dependency Injection`,
+  },
+  examples: [
+    {
+      title: "Strategy collapses into a function",
+      prompt: "In Java, swapping a discount algorithm needs an interface and one class per algorithm. In Python you can pass the algorithm itself.",
+      code: `def no_discount(price):
+    return price
+
+def black_friday(price):
+    return price * 0.7
+
+def checkout(price, discount):      # 'discount' is just a callable
+    return round(discount(price), 2)
+
+print(checkout(100, no_discount))
+print(checkout(100, black_friday))`,
+      explanation: "The Strategy pattern's whole purpose is 'make the algorithm swappable'. Since functions are first-class objects, the parameter <em>is</em> the strategy. No interface, no class hierarchy.",
+      output: "100 / 70.0",
+    },
+    {
+      title: "Duck typing replaces a shared interface",
+      prompt: "Two unrelated classes work with the same function because both have a <code>.send()</code> method.",
+      code: `class EmailNotifier:
+    def send(self, msg):
+        return f"email: {msg}"
+
+class SlackNotifier:
+    def send(self, msg):
+        return f"slack: {msg}"
+
+def alert(notifier, msg):
+    return notifier.send(msg)      # no declared interface needed
+
+print(alert(EmailNotifier(), "deploy done"))
+print(alert(SlackNotifier(), "deploy done"))`,
+      explanation: "Many pattern diagrams contain an abstract base class that exists only to satisfy a static type system. Python doesn't require it. When you do want a checked contract, use <code>typing.Protocol</code> (structural, checked by tools like mypy) or <code>abc.ABC</code> (checked at instantiation).",
+      output: "email: deploy done / slack: deploy done",
+    },
+  ],
+  gotchasHeading: "Common pitfalls",
+  gotchas: [
+    "Transliterating Java patterns line by line (private constructors, getInstance(), one-method interfaces). It works but is noise in Python.",
+    "Reaching for a pattern before there is a problem. A pattern is a response to pain (duplication, tight coupling), not a checklist item.",
+    "Confusing the <em>Decorator pattern</em> (wrapping objects) with Python's <code>@decorator</code> syntax (wrapping functions). They overlap but are not the same idea.",
+  ],
+  practiceExercises: [
+    "For each of the 12 patterns in this roadmap, guess whether Python needs a class for it or a simpler construct. Check your guess as you go.",
+    "Find one place in code you've written where a function parameter could replace a class hierarchy.",
+    "Write a <code>typing.Protocol</code> for the two notifier classes above.",
+  ],
+  quiz: [
+    {
+      question: "Why does the Strategy pattern often shrink to a plain function in Python?",
+      options: [
+        "Functions are first-class objects, so the algorithm can be passed directly",
+        "Python forbids classes for strategies",
+        "Python has no polymorphism",
+        "Strategies are only needed in Java",
+      ],
+      correct: 0,
+      explanation: "The pattern exists to make an algorithm swappable; passing a callable achieves that with no interface or class hierarchy.",
+    },
+    {
+      question: "What typically replaces a Java-style interface in Python?",
+      options: [
+        "Duck typing, or typing.Protocol / abc.ABC when a checked contract is wanted",
+        "A private constructor",
+        "A global variable",
+        "Nothing can replace it",
+      ],
+      correct: 0,
+      explanation: "Python resolves methods at runtime by name. Protocol and ABC add optional, checkable contracts.",
+    },
+    {
+      question: "Which is the best description of a Python module with regard to Singleton?",
+      options: [
+        "A module is imported once and cached, so it already behaves like a singleton",
+        "Modules are re-created on every import",
+        "Modules cannot hold state",
+        "Modules must use getInstance()",
+      ],
+      correct: 0,
+      explanation: "Python caches imported modules in sys.modules, so module-level state is shared across the process.",
+    },
+    {
+      question: "Which statement about the Decorator pattern vs Python's @decorator is right?",
+      options: [
+        "They are related but different: one wraps objects, the other wraps functions at definition time",
+        "They are exactly the same thing",
+        "@decorator syntax only works on classes",
+        "The pattern is illegal in Python",
+      ],
+      correct: 0,
+      explanation: "The GoF Decorator adds behavior by wrapping an object that shares an interface. The @ syntax is function composition applied at def time.",
+    },
+    {
+      question: "When should you introduce a design pattern?",
+      options: [
+        "When a concrete problem (duplication, tight coupling, rigid extension) appears",
+        "Always, before writing any code",
+        "Only in Java projects",
+        "Only when a customer asks for one by name",
+      ],
+      correct: 0,
+      explanation: "Patterns are solutions to recurring problems. Applying them without the problem adds complexity for nothing.",
+    },
+  ],
+  id: "patterns-overview",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

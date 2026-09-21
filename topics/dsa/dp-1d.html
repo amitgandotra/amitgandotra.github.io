@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>1-D Dynamic Programming — Becoming FDE</title>
+<title>Dynamic Programming: 1-D — Becoming FDE</title>
 <link rel="stylesheet" href="../../css/style.css" />
 </head>
 <body>
@@ -11,11 +11,6 @@
 <header class="site-header">
   <div class="container">
     <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
-    <nav class="site-nav">
-      <a href="../python/index.html">Python</a>
-      <a href="index.html" class="active">DSA</a>
-      <a href="../../index.html">All Topics</a>
-    </nav>
   </div>
 </header>
 
@@ -35,9 +30,9 @@
   <div class="container">Becoming FDE — build in public, ship in prod.</div>
 </footer>
 
-<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/data/site.js"></script>
 <script src="../../js/progress.js"></script>
-<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/site-shell.js"></script>
 <script src="../../js/highlight.js"></script>
 <script src="../../js/quiz.js"></script>
 <script>
@@ -89,12 +84,54 @@ const PAGE_DATA = {
     },
   ],
   practiceProblems: [
-    "Climbing Stairs",
-    "House Robber",
-    "Coin Change",
-    "Longest Increasing Subsequence",
-    "Word Break",
-    "Decode Ways",
+    {
+      n: 70,
+      title: "Climbing Stairs",
+      slug: "climbing-stairs",
+      level: "Easy",
+    },
+    {
+      n: 746,
+      title: "Min Cost Climbing Stairs",
+      slug: "min-cost-climbing-stairs",
+      level: "Easy",
+    },
+    {
+      n: 198,
+      title: "House Robber",
+      slug: "house-robber",
+      level: "Medium",
+    },
+    {
+      n: 213,
+      title: "House Robber II",
+      slug: "house-robber-ii",
+      level: "Medium",
+    },
+    {
+      n: 322,
+      title: "Coin Change",
+      slug: "coin-change",
+      level: "Medium",
+    },
+    {
+      n: 139,
+      title: "Word Break",
+      slug: "word-break",
+      level: "Medium",
+    },
+    {
+      n: 91,
+      title: "Decode Ways",
+      slug: "decode-ways",
+      level: "Medium",
+    },
+    {
+      n: 300,
+      title: "Longest Increasing Subsequence",
+      slug: "longest-increasing-subsequence",
+      level: "Medium",
+    },
   ],
   quiz: [
     {
@@ -105,51 +142,31 @@ const PAGE_DATA = {
     },
     {
       question: "What's the core inefficiency that DP eliminates versus naive recursion?",
-      options: [
-        "Recomputing the same overlapping subproblems repeatedly",
-        "Using too much memory always",
-        "Using loops instead of recursion",
-        "Sorting the input unnecessarily",
-      ],
+      options: ["Recomputing the same overlapping subproblems repeatedly", "Using too much memory always", "Using loops instead of recursion", "Sorting the input unnecessarily"],
       correct: 0,
       explanation: "Naive recursion without memoization revisits identical subproblems exponentially many times; caching turns that into linear or polynomial work.",
     },
     {
       question: "In House Robber, why does the O(1) space solution only need two rolling variables?",
-      options: [
-        "Because the answer at house i only depends on the results from houses i-1 and i-2",
-        "Because there are only 2 houses in the problem",
-        "Because it's not actually O(1)",
-        "Because memoization always requires exactly 2 variables",
-      ],
+      options: ["Because the answer at house i only depends on the results from houses i-1 and i-2", "Because there are only 2 houses in the problem", "Because it's not actually O(1)", "Because memoization always requires exactly 2 variables"],
       correct: 0,
       explanation: "The recurrence only reaches back two steps, so there's no need to store the full DP array.",
     },
     {
       question: "In Coin Change, what does dp[a] represent?",
-      options: [
-        "The minimum number of coins needed to make amount a",
-        "The maximum number of coins for amount a",
-        "The number of ways to make amount a",
-        "Whether amount a is reachable, true/false",
-      ],
+      options: ["The minimum number of coins needed to make amount a", "The maximum number of coins for amount a", "The number of ways to make amount a", "Whether amount a is reachable, true/false"],
       correct: 0,
       explanation: "Each dp[a] is built by taking the best (minimum) result from dp[a - coin] + 1 across all valid coins.",
     },
     {
       question: "Top-down (memoization) and bottom-up (tabulation) DP differ mainly in...",
-      options: [
-        "Recursive-with-a-cache vs iterative-filling-a-table, but they solve the same subproblems",
-        "They solve fundamentally different problems",
-        "Top-down is always faster",
-        "Bottom-up can never achieve O(1) space",
-      ],
+      options: ["Recursive-with-a-cache vs iterative-filling-a-table, but they solve the same subproblems", "They solve fundamentally different problems", "Top-down is always faster", "Bottom-up can never achieve O(1) space"],
       correct: 0,
       explanation: "Both approaches compute the same set of subproblem results — they just traverse the dependency graph in opposite directions.",
     },
   ],
 };
 </script>
-<script src="../../js/pattern-page.js"></script>
+<script src="../../js/topic-page.js"></script>
 </body>
 </html>

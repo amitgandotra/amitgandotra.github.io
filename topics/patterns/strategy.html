@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Strategy — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html" class="active">Patterns</a>
+      <a href="../integration/index.html">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Strategy defines a family of interchangeable algorithms and lets the caller pick one at runtime. Pricing rules, retry policies, sorting orders, and data-cleaning steps are all strategies.",
+  keyHeading: "When to use it, and the Pythonic take",
+  keyPoints: [
+    "Use when you have if/elif chains choosing between algorithms, or when behavior must vary per customer or per config.",
+    "Java: interface + one class per algorithm + a context holding a reference. Python: <strong>a callable</strong>. Functions, lambdas, and callable objects all work.",
+    "Use a class only when a strategy needs its own state or several methods.",
+    "Strategies pair well with a dict registry (name → function) for config-driven selection.",
+  ],
+  template: {
+    heading: "Strategy as a function",
+    label: "python",
+    note: "The context accepts any callable with the agreed signature.",
+    code: `def by_price(item):  return item["price"]
+def by_name(item):   return item["name"]
+
+def sort_items(items, key_strategy):
+    return sorted(items, key=key_strategy)
+
+items = [{"name": "b", "price": 5}, {"name": "a", "price": 9}]
+print(sort_items(items, by_price))
+print(sort_items(items, by_name))`,
+  },
+  examples: [
+    {
+      title: "Retry policies as strategies",
+      prompt: "Different customer APIs need different waits between retries. Encode each as a function returning the delay for attempt n.",
+      code: `def fixed(attempt):       return 2.0
+def linear(attempt):      return 1.0 * attempt
+def exponential(attempt): return 2.0 ** attempt
+
+POLICIES = {"fixed": fixed, "linear": linear, "exponential": exponential}
+
+def delays(policy_name, attempts):
+    policy = POLICIES[policy_name]
+    return [policy(n) for n in range(1, attempts + 1)]
+
+print(delays("exponential", 4))
+print(delays("linear", 4))`,
+      explanation: "The retry loop doesn't care how the delay is computed. Choosing a policy from config is one dict lookup, and adding a new policy is one function.",
+      output: "[2.0, 4.0, 8.0, 16.0] / [1.0, 2.0, 3.0, 4.0]",
+    },
+    {
+      title: "Stateful strategy as a callable class",
+      prompt: "When a strategy needs configuration, use a class with <code>__call__</code> so it still looks like a function to the caller.",
+      code: `class PercentDiscount:
+    def __init__(self, percent):
+        self.percent = percent
+
+    def __call__(self, price):
+        return price * (1 - self.percent / 100)
+
+def checkout(price, discount):
+    return round(discount(price), 2)
+
+print(checkout(80, PercentDiscount(25)))
+print(checkout(80, lambda p: p))     # plain lambda works too`,
+      explanation: "Because the caller only needs <code>discount(price)</code>, a lambda, a function, and an object with <code>__call__</code> are interchangeable. That is Strategy without any base class.",
+      output: "60.0 / 80",
+    },
+  ],
+  gotchas: [
+    "Don't create a class hierarchy for strategies that are one line of logic each.",
+    "Agree on one signature. Mixing strategies with different parameters breaks the swap-ability.",
+    "Watch late binding in lambdas created in a loop; capture with a default argument.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Replace an if/elif on a 'mode' string in your own code with a dict of functions.",
+    "Add a 'jitter' retry policy that adds a random offset to exponential delays.",
+    "Write a strategy that needs state (a counter) as a callable class.",
+  ],
+  quiz: [
+    {
+      question: "What does Strategy let you do?",
+      options: [
+        "Swap interchangeable algorithms at runtime",
+        "Create exactly one instance",
+        "Wrap an object to add behavior",
+        "Undo operations",
+      ],
+      correct: 0,
+      explanation: "Strategy separates 'what algorithm' from 'who uses it' so it can be chosen at runtime.",
+    },
+    {
+      question: "What is the usual Python form of a strategy?",
+      options: [
+        "A callable (function, lambda, or object with __call__)",
+        "An abstract base class with a factory",
+        "A metaclass",
+        "A singleton",
+      ],
+      correct: 0,
+      explanation: "First-class functions make the interface just a call signature.",
+    },
+    {
+      question: "When would you use a class instead of a plain function?",
+      options: [
+        "When the strategy needs its own configuration or state",
+        "Never",
+        "Only when using threads",
+        "Only for sorting",
+      ],
+      correct: 0,
+      explanation: "A callable object can carry state while still being invoked like a function.",
+    },
+    {
+      question: "How does a dict registry help with strategies?",
+      options: [
+        "It maps config names to functions, so selection is one lookup",
+        "It makes strategies immutable",
+        "It replaces the need for functions",
+        "It runs them in parallel",
+      ],
+      correct: 0,
+      explanation: "Config-driven behavior becomes a simple dictionary lookup.",
+    },
+    {
+      question: "What must all strategies in a family share?",
+      options: [
+        "The same call signature",
+        "The same name",
+        "The same file",
+        "The same return value always",
+      ],
+      correct: 0,
+      explanation: "The context calls them uniformly, so parameters and meaning of results must match.",
+    },
+  ],
+  id: "strategy",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

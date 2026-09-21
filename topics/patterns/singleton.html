@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Singleton — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html" class="active">Patterns</a>
+      <a href="../integration/index.html">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Singleton guarantees a class has exactly one instance and gives global access to it. Typical uses: configuration, a connection pool, a logger. It is also the most overused pattern, because it is global state with a nicer name.",
+  keyHeading: "When to use it, and the Pythonic take",
+  keyPoints: [
+    "Use when exactly one shared instance is genuinely required: app config, a shared client/pool, a registry.",
+    "Java: private constructor + static <code>getInstance()</code> + thread-safety concerns. Python: the simplest singleton is a <strong>module-level object</strong>.",
+    "A class-based singleton is possible via <code>__new__</code>, a decorator, or a metaclass. Reach for these only if you need lazy creation or subclassing.",
+    "Singletons make testing hard (hidden shared state). Prefer passing the instance in (see Dependency Injection).",
+  ],
+  template: {
+    heading: "Module-level singleton (preferred)",
+    label: "python",
+    note: "Create the object once at module level; every importer gets the same one.",
+    code: `# config.py
+class _Config:
+    def __init__(self):
+        self.settings = {"env": "dev"}
+
+config = _Config()          # created once, when the module is first imported
+
+# elsewhere:
+#   from config import config
+#   config.settings["env"]`,
+  },
+  examples: [
+    {
+      title: "Class-based Singleton with __new__",
+      prompt: "When you need the class form (for example, lazy creation), override <code>__new__</code> to return the same instance each time.",
+      code: `class Registry:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.items = {}
+        return cls._instance
+
+a = Registry()
+b = Registry()
+a.items["x"] = 1
+print(a is b)          # True -- same object
+print(b.items)         # {'x': 1}`,
+      explanation: "<code>__new__</code> runs before <code>__init__</code> and controls object creation. Returning the cached instance means every <code>Registry()</code> call yields the same object. Note that <code>__init__</code> would run again on each call, which is why the state is set inside <code>__new__</code> here.",
+      output: "True / {'x': 1}",
+    },
+    {
+      title: "Thread-safe lazy singleton",
+      prompt: "Two threads calling the constructor at the same moment could each create an instance. Guard creation with a lock.",
+      code: `import threading
+
+class Client:
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls):
+        if cls._instance is None:               # fast path, no lock
+            with cls._lock:
+                if cls._instance is None:        # re-check inside the lock
+                    cls._instance = super().__new__(cls)
+        return cls._instance
+
+print(Client() is Client())`,
+      explanation: "This is double-checked locking: the cheap check avoids taking the lock on every call, and the second check inside the lock prevents two threads that both passed the first check from each creating an instance.",
+      output: "True",
+    },
+  ],
+  gotchas: [
+    "Hidden global state: tests that mutate a singleton leak into other tests. Provide a way to reset it, or inject it instead.",
+    "With the <code>__new__</code> form, <code>__init__</code> re-runs on every <code>Registry()</code> call and can wipe state. Initialize in <code>__new__</code> or guard <code>__init__</code>.",
+    "Multiprocessing: each process gets its own copy, so 'one instance' means one per process, not one per machine.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Convert the <code>Registry</code> class into a module-level object and confirm two imports share it.",
+    "Write a test that fails because a singleton's state leaked between tests, then fix it with injection.",
+    "Write a <code>@singleton</code> class decorator that caches one instance per class.",
+  ],
+  quiz: [
+    {
+      question: "What is the simplest Pythonic singleton?",
+      options: [
+        "A module-level object created once at import time",
+        "A class with a private constructor",
+        "A metaclass with getInstance()",
+        "A global function that returns a new object",
+      ],
+      correct: 0,
+      explanation: "Modules are cached in sys.modules, so an object created at module level is shared by all importers.",
+    },
+    {
+      question: "Which method controls object creation and is overridden in the class-based singleton?",
+      options: ["__new__", "__init__", "__del__", "__call__"],
+      correct: 0,
+      explanation: "__new__ creates the instance and runs before __init__, so it's where you return the cached instance.",
+    },
+    {
+      question: "Why does the thread-safe version check for None twice?",
+      options: [
+        "The first check avoids locking on every call; the second prevents a race between threads that both passed the first",
+        "Python requires two checks",
+        "To make the code slower on purpose",
+        "Because __new__ runs twice",
+      ],
+      correct: 0,
+      explanation: "Double-checked locking keeps the common path lock-free while still guaranteeing a single creation.",
+    },
+    {
+      question: "What is a main downside of singletons?",
+      options: [
+        "Hidden global state that makes tests interdependent",
+        "They cannot hold data",
+        "They only work with threads",
+        "They need a database",
+      ],
+      correct: 0,
+      explanation: "Shared mutable state couples code that shouldn't be coupled, and tests can affect each other.",
+    },
+    {
+      question: "If you use multiprocessing, how many instances of a 'singleton' exist?",
+      options: [
+        "One per process",
+        "Exactly one for the whole machine",
+        "One per thread",
+        "Zero",
+      ],
+      correct: 0,
+      explanation: "Each process has its own memory, so each creates its own instance.",
+    },
+  ],
+  id: "singleton",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

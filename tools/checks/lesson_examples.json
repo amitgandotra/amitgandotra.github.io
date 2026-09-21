@@ -1,0 +1,373 @@
+[
+ {
+  "lesson": "arrays-hashing",
+  "title": "Two Sum",
+  "template": "",
+  "code": "def two_sum(nums, target):\n    seen = {}  # value -> index\n    for i, n in enumerate(nums):\n        complement = target - n\n        if complement in seen:\n            return [seen[complement], i]\n        seen[n] = i\n    return []",
+  "check": "assert sorted(two_sum([2, 7, 11, 15], 9)) == [0, 1]\nassert sorted(two_sum([3, 2, 4], 6)) == [1, 2]"
+ },
+ {
+  "lesson": "arrays-hashing",
+  "title": "Group Anagrams",
+  "template": "",
+  "code": "def group_anagrams(strs):\n    groups = {}\n    for s in strs:\n        key = \"\".join(sorted(s))\n        groups.setdefault(key, []).append(s)\n    return list(groups.values())",
+  "check": "assert sorted(sorted(g) for g in group_anagrams([\"eat\", \"tea\", \"tan\", \"ate\", \"nat\", \"bat\"])) == [[\"ate\", \"eat\", \"tea\"], [\"bat\"], [\"nat\", \"tan\"]]"
+ },
+ {
+  "lesson": "prefix-sum",
+  "title": "Subarray Sum Equals K",
+  "template": "",
+  "code": "def subarray_sum(nums, k):\n    count = 0\n    running = 0\n    seen = {0: 1}                       # prefix sum -> how many times it occurred\n    for x in nums:\n        running += x\n        count += seen.get(running - k, 0)     # an earlier prefix that leaves exactly k\n        seen[running] = seen.get(running, 0) + 1\n    return count",
+  "check": "assert subarray_sum([1, 1, 1], 2) == 2\nassert subarray_sum([1, 2, 3], 3) == 2\nassert subarray_sum([1, -1, 0], 0) == 3"
+ },
+ {
+  "lesson": "prefix-sum",
+  "title": "Product of Array Except Self",
+  "template": "",
+  "code": "def product_except_self(nums):\n    n = len(nums)\n    out = [1] * n\n    left = 1\n    for i in range(n):\n        out[i] = left                # product of everything to the left of i\n        left *= nums[i]\n    right = 1\n    for i in range(n - 1, -1, -1):\n        out[i] *= right              # multiply by the product of everything to the right\n        right *= nums[i]\n    return out",
+  "check": "assert product_except_self([1, 2, 3, 4]) == [24, 12, 8, 6]\nassert product_except_self([-1, 1, 0, -3, 3]) == [0, 0, 9, 0, 0]"
+ },
+ {
+  "lesson": "two-pointers",
+  "title": "Valid Palindrome",
+  "template": "",
+  "code": "def is_palindrome(s):\n    left, right = 0, len(s) - 1\n    while left < right:\n        while left < right and not s[left].isalnum():\n            left += 1\n        while left < right and not s[right].isalnum():\n            right -= 1\n        if s[left].lower() != s[right].lower():\n            return False\n        left += 1\n        right -= 1\n    return True",
+  "check": "assert is_palindrome(\"A man, a plan, a canal: Panama\") is True\nassert is_palindrome(\"race a car\") is False"
+ },
+ {
+  "lesson": "two-pointers",
+  "title": "3Sum",
+  "template": "",
+  "code": "def three_sum(nums):\n    nums.sort()\n    res = []\n    for i in range(len(nums)):\n        if i > 0 and nums[i] == nums[i - 1]:\n            continue\n        left, right = i + 1, len(nums) - 1\n        while left < right:\n            total = nums[i] + nums[left] + nums[right]\n            if total < 0:\n                left += 1\n            elif total > 0:\n                right -= 1\n            else:\n                res.append([nums[i], nums[left], nums[right]])\n                left += 1\n                while left < right and nums[left] == nums[left - 1]:\n                    left += 1\n    return res",
+  "check": "assert sorted(three_sum([-1, 0, 1, 2, -1, -4])) == [[-1, -1, 2], [-1, 0, 1]]\nassert three_sum([0, 1, 1]) == []"
+ },
+ {
+  "lesson": "sliding-window",
+  "title": "Longest Substring Without Repeating Characters",
+  "template": "",
+  "code": "def length_of_longest_substring(s):\n    seen = set()\n    left = 0\n    best = 0\n    for right, ch in enumerate(s):\n        while ch in seen:\n            seen.remove(s[left])\n            left += 1\n        seen.add(ch)\n        best = max(best, right - left + 1)\n    return best",
+  "check": "assert length_of_longest_substring(\"abcabcbb\") == 3\nassert length_of_longest_substring(\"\") == 0"
+ },
+ {
+  "lesson": "sliding-window",
+  "title": "Minimum Window Substring",
+  "template": "",
+  "code": "from collections import Counter\n\ndef min_window(s, t):\n    if not t:\n        return \"\"\n    need = Counter(t)\n    missing = len(t)\n    left = 0\n    best_left, best_len = 0, float(\"inf\")\n\n    for right, ch in enumerate(s):\n        if need[ch] > 0:\n            missing -= 1\n        need[ch] -= 1\n\n        while missing == 0:\n            if right - left + 1 < best_len:\n                best_left, best_len = left, right - left + 1\n            need[s[left]] += 1\n            if need[s[left]] > 0:\n                missing += 1\n            left += 1\n\n    return \"\" if best_len == float(\"inf\") else s[best_left:best_left + best_len]",
+  "check": "assert min_window(\"ADOBECODEBANC\", \"ABC\") == \"BANC\"\nassert min_window(\"a\", \"aa\") == \"\""
+ },
+ {
+  "lesson": "intervals",
+  "title": "Insert Interval",
+  "template": "",
+  "code": "def insert(intervals, new_interval):\n    result = []\n    i, n = 0, len(intervals)\n\n    while i < n and intervals[i][1] < new_interval[0]:\n        result.append(intervals[i])\n        i += 1\n\n    while i < n and intervals[i][0] <= new_interval[1]:\n        new_interval[0] = min(new_interval[0], intervals[i][0])\n        new_interval[1] = max(new_interval[1], intervals[i][1])\n        i += 1\n    result.append(new_interval)\n\n    while i < n:\n        result.append(intervals[i])\n        i += 1\n\n    return result",
+  "check": "assert insert([[1, 3], [6, 9]], [2, 5]) == [[1, 5], [6, 9]]\nassert insert([], [5, 7]) == [[5, 7]]"
+ },
+ {
+  "lesson": "intervals",
+  "title": "Meeting Rooms II",
+  "template": "",
+  "code": "import heapq\n\ndef min_meeting_rooms(intervals):\n    intervals.sort(key=lambda x: x[0])\n    heap = []  # end times of ongoing meetings\n    for start, end in intervals:\n        if heap and heap[0] <= start:\n            heapq.heapreplace(heap, end)\n        else:\n            heapq.heappush(heap, end)\n    return len(heap)",
+  "check": "assert min_meeting_rooms([[0, 30], [5, 10], [15, 20]]) == 2\nassert min_meeting_rooms([[7, 10], [2, 4]]) == 1"
+ },
+ {
+  "lesson": "binary-search",
+  "title": "Search in Rotated Sorted Array",
+  "template": "",
+  "code": "def search_rotated(nums, target):\n    left, right = 0, len(nums) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if nums[mid] == target:\n            return mid\n        if nums[left] <= nums[mid]:       # left half is sorted\n            if nums[left] <= target < nums[mid]:\n                right = mid - 1\n            else:\n                left = mid + 1\n        else:                              # right half is sorted\n            if nums[mid] < target <= nums[right]:\n                left = mid + 1\n            else:\n                right = mid - 1\n    return -1",
+  "check": "assert search_rotated([4, 5, 6, 7, 0, 1, 2], 0) == 4\nassert search_rotated([4, 5, 6, 7, 0, 1, 2], 3) == -1"
+ },
+ {
+  "lesson": "binary-search",
+  "title": "Koko Eating Bananas (search on the answer)",
+  "template": "",
+  "code": "import math\n\ndef min_eating_speed(piles, h):\n    lo, hi = 1, max(piles)\n    while lo < hi:\n        mid = (lo + hi) // 2\n        hours = sum(math.ceil(p / mid) for p in piles)\n        if hours <= h:\n            hi = mid\n        else:\n            lo = mid + 1\n    return lo",
+  "check": "assert min_eating_speed([3, 6, 7, 11], 8) == 4\nassert min_eating_speed([30, 11, 23, 4, 20], 5) == 30"
+ },
+ {
+  "lesson": "bit-manipulation",
+  "title": "Single Number",
+  "template": "",
+  "code": "def single_number(nums):\n    result = 0\n    for n in nums:\n        result ^= n\n    return result",
+  "check": "assert single_number([4, 1, 2, 1, 2]) == 4"
+ },
+ {
+  "lesson": "bit-manipulation",
+  "title": "Counting Bits",
+  "template": "",
+  "code": "def count_bits(n):\n    ans = [0] * (n + 1)\n    for i in range(1, n + 1):\n        ans[i] = ans[i >> 1] + (i & 1)\n    return ans",
+  "check": "assert count_bits(5) == [0, 1, 1, 2, 1, 2]"
+ },
+ {
+  "lesson": "fast-slow-pointers",
+  "title": "Linked List Cycle II: find where the cycle starts",
+  "template": "",
+  "code": "def detect_cycle(head):\n    slow = fast = head\n    while fast and fast.next:\n        slow = slow.next\n        fast = fast.next.next\n        if slow is fast:                 # phase 1: they meet inside the cycle\n            break\n    else:\n        return None\n\n    slow = head                          # phase 2: restart one pointer at the head\n    while slow is not fast:\n        slow = slow.next\n        fast = fast.next\n    return slow                          # they meet at the cycle start",
+  "check": "head = lst([3, 2, 0, -4])\ntail = head\nwhile tail.next:\n    tail = tail.next\ntail.next = head.next          # cycle starts at the node with value 2\nassert detect_cycle(head).val == 2\nassert detect_cycle(lst([1, 2, 3])) is None\nassert detect_cycle(None) is None"
+ },
+ {
+  "lesson": "fast-slow-pointers",
+  "title": "Remove Nth Node From End of List",
+  "template": "",
+  "code": "def remove_nth_from_end(head, n):\n    dummy = ListNode(0, head)            # handles removing the head itself\n    lead = trail = dummy\n    for _ in range(n):\n        lead = lead.next                 # open a gap of n nodes\n    while lead.next:\n        lead = lead.next\n        trail = trail.next\n    trail.next = trail.next.next         # trail sits just before the target\n    return dummy.next",
+  "check": "assert tolist(remove_nth_from_end(lst([1, 2, 3, 4, 5]), 2)) == [1, 2, 3, 5]\nassert tolist(remove_nth_from_end(lst([1]), 1)) == []\nassert tolist(remove_nth_from_end(lst([1, 2]), 1)) == [1]"
+ },
+ {
+  "lesson": "linked-list-reversal",
+  "title": "Reverse Linked List II (a sublist)",
+  "template": "",
+  "code": "def reverse_between(head, left, right):\n    dummy = ListNode(0, head)\n    before = dummy\n    for _ in range(left - 1):\n        before = before.next                 # node just before the sublist\n    prev, curr = None, before.next\n    for _ in range(right - left + 1):\n        nxt = curr.next\n        curr.next = prev\n        prev, curr = curr, nxt\n    before.next.next = curr                  # old first node now points past the sublist\n    before.next = prev                       # 'before' points to the new sublist head\n    return dummy.next",
+  "check": "assert tolist(reverse_between(lst([1, 2, 3, 4, 5]), 2, 4)) == [1, 4, 3, 2, 5]\nassert tolist(reverse_between(lst([5]), 1, 1)) == [5]\nassert tolist(reverse_between(lst([1, 2, 3]), 1, 3)) == [3, 2, 1]"
+ },
+ {
+  "lesson": "linked-list-reversal",
+  "title": "Swap Nodes in Pairs",
+  "template": "",
+  "code": "def swap_pairs(head):\n    dummy = ListNode(0, head)\n    prev = dummy\n    while prev.next and prev.next.next:\n        first, second = prev.next, prev.next.next\n        first.next = second.next           # first now skips over second\n        second.next = first                # second points back to first\n        prev.next = second                 # previous node points to the new front\n        prev = first                       # first is now the tail of this pair\n    return dummy.next",
+  "check": "assert tolist(swap_pairs(lst([1, 2, 3, 4]))) == [2, 1, 4, 3]\nassert tolist(swap_pairs(lst([1, 2, 3]))) == [2, 1, 3]\nassert tolist(swap_pairs(None)) == []"
+ },
+ {
+  "lesson": "stack",
+  "title": "Min Stack",
+  "template": "",
+  "code": "class MinStack:\n    def __init__(self):\n        self.stack = []                      # (value, minimum so far)\n\n    def push(self, x):\n        current_min = min(x, self.stack[-1][1]) if self.stack else x\n        self.stack.append((x, current_min))\n\n    def pop(self):\n        self.stack.pop()\n\n    def top(self):\n        return self.stack[-1][0]\n\n    def get_min(self):\n        return self.stack[-1][1]",
+  "check": "s = MinStack()\ns.push(3); s.push(1); s.push(2)\nassert s.get_min() == 1\ns.pop()\nassert s.get_min() == 1 and s.top() == 1\ns.pop()\nassert s.get_min() == 3"
+ },
+ {
+  "lesson": "stack",
+  "title": "Evaluate Reverse Polish Notation",
+  "template": "",
+  "code": "def eval_rpn(tokens):\n    stack = []\n    for t in tokens:\n        if t in (\"+\", \"-\", \"*\", \"/\"):\n            b, a = stack.pop(), stack.pop()      # right operand comes off first\n            if t == \"+\":\n                stack.append(a + b)\n            elif t == \"-\":\n                stack.append(a - b)\n            elif t == \"*\":\n                stack.append(a * b)\n            else:\n                stack.append(int(a / b))          # truncate toward zero, like Java\n        else:\n            stack.append(int(t))\n    return stack[0]",
+  "check": "assert eval_rpn([\"2\", \"1\", \"+\", \"3\", \"*\"]) == 9\nassert eval_rpn([\"4\", \"13\", \"5\", \"/\", \"+\"]) == 6\nassert eval_rpn([\"10\", \"6\", \"9\", \"3\", \"+\", \"-11\", \"*\", \"/\", \"*\", \"17\", \"+\", \"5\", \"+\"]) == 22"
+ },
+ {
+  "lesson": "monotonic-stack",
+  "title": "Daily Temperatures",
+  "template": "",
+  "code": "def daily_temperatures(temps):\n    result = [0] * len(temps)\n    stack = []                             # indices with decreasing temperatures\n    for i, t in enumerate(temps):\n        while stack and temps[stack[-1]] < t:\n            j = stack.pop()\n            result[j] = i - j\n        stack.append(i)\n    return result",
+  "check": "assert daily_temperatures([73, 74, 75, 71, 69, 72, 76, 73]) == [1, 1, 4, 2, 1, 1, 0, 0]\nassert daily_temperatures([30, 40, 50, 60]) == [1, 1, 1, 0]"
+ },
+ {
+  "lesson": "monotonic-stack",
+  "title": "Largest Rectangle in Histogram",
+  "template": "",
+  "code": "def largest_rectangle_area(heights):\n    stack = []                                   # indices, heights increasing\n    best = 0\n    for i, h in enumerate(heights + [0]):        # a final 0 flushes the stack\n        while stack and heights[stack[-1]] >= h:\n            height = heights[stack.pop()]\n            left = stack[-1] if stack else -1    # nearest smaller bar on the left\n            best = max(best, height * (i - left - 1))\n        stack.append(i)\n    return best",
+  "check": "assert largest_rectangle_area([2, 1, 5, 6, 2, 3]) == 10\nassert largest_rectangle_area([2, 4]) == 4\nassert largest_rectangle_area([1]) == 1"
+ },
+ {
+  "lesson": "heap",
+  "title": "Top K Frequent Elements",
+  "template": "",
+  "code": "import heapq\nfrom collections import Counter\n\ndef top_k_frequent(nums, k):\n    freq = Counter(nums)\n    return heapq.nlargest(k, freq.keys(), key=freq.get)",
+  "check": "assert sorted(top_k_frequent([1, 1, 1, 2, 2, 3], 2)) == [1, 2]"
+ },
+ {
+  "lesson": "heap",
+  "title": "Merge k Sorted Lists",
+  "template": "",
+  "code": "import heapq\n\ndef merge_k_lists(lists):\n    heap = []\n    for i, node in enumerate(lists):\n        if node:\n            heapq.heappush(heap, (node.val, i, node))\n\n    dummy = ListNode()\n    tail = dummy\n    while heap:\n        val, i, node = heapq.heappop(heap)\n        tail.next = node\n        tail = tail.next\n        if node.next:\n            heapq.heappush(heap, (node.next.val, i, node.next))\n    return dummy.next",
+  "check": "assert tolist(merge_k_lists([lst([1, 4, 5]), lst([1, 3, 4]), lst([2, 6])])) == [1, 1, 2, 3, 4, 4, 5, 6]"
+ },
+ {
+  "lesson": "trees",
+  "title": "Maximum Depth of Binary Tree",
+  "template": "",
+  "code": "def max_depth(root):\n    if not root:\n        return 0\n    return 1 + max(max_depth(root.left), max_depth(root.right))",
+  "check": "assert max_depth(tree([3, 9, 20, None, None, 15, 7])) == 3\nassert max_depth(None) == 0"
+ },
+ {
+  "lesson": "trees",
+  "title": "Binary Tree Level Order Traversal",
+  "template": "",
+  "code": "from collections import deque\n\ndef level_order(root):\n    if not root:\n        return []\n    result = []\n    queue = deque([root])\n    while queue:\n        level = []\n        for _ in range(len(queue)):\n            node = queue.popleft()\n            level.append(node.val)\n            if node.left:\n                queue.append(node.left)\n            if node.right:\n                queue.append(node.right)\n        result.append(level)\n    return result",
+  "check": "assert level_order(tree([3, 9, 20, None, None, 15, 7])) == [[3], [9, 20], [15, 7]]"
+ },
+ {
+  "lesson": "tries",
+  "title": "Implement Trie (Prefix Tree)",
+  "template": "class TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.is_end = False\n\nclass Trie:\n    def __init__(self):\n        self.root = TrieNode()\n\n    def insert(self, word):\n        node = self.root\n        for ch in word:\n            node = node.children.setdefault(ch, TrieNode())\n        node.is_end = True\n\n    def search(self, word):\n        node = self._find(word)\n        return node is not None and node.is_end\n\n    def starts_with(self, prefix):\n        return self._find(prefix) is not None\n\n    def _find(self, s):\n        node = self.root\n        for ch in s:\n            if ch not in node.children:\n                return None\n            node = node.children[ch]\n        return node",
+  "code": "trie = Trie()\ntrie.insert(\"apple\")\ntrie.search(\"apple\")       # True\ntrie.search(\"app\")         # False — not marked as a full word\ntrie.starts_with(\"app\")    # True — prefix exists",
+  "check": "t = Trie()\nt.insert(\"apple\")\nassert t.search(\"apple\") and not t.search(\"app\") and t.starts_with(\"app\")"
+ },
+ {
+  "lesson": "tries",
+  "title": "Add and Search Word (with '.' wildcard)",
+  "template": "class TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.is_end = False\n\nclass Trie:\n    def __init__(self):\n        self.root = TrieNode()\n\n    def insert(self, word):\n        node = self.root\n        for ch in word:\n            node = node.children.setdefault(ch, TrieNode())\n        node.is_end = True\n\n    def search(self, word):\n        node = self._find(word)\n        return node is not None and node.is_end\n\n    def starts_with(self, prefix):\n        return self._find(prefix) is not None\n\n    def _find(self, s):\n        node = self.root\n        for ch in s:\n            if ch not in node.children:\n                return None\n            node = node.children[ch]\n        return node",
+  "code": "class WordDictionary:\n    def __init__(self):\n        self.root = TrieNode()\n\n    def add_word(self, word):\n        node = self.root\n        for ch in word:\n            node = node.children.setdefault(ch, TrieNode())\n        node.is_end = True\n\n    def search(self, word):\n        def dfs(node, i):\n            if i == len(word):\n                return node.is_end\n            ch = word[i]\n            if ch == \".\":\n                return any(dfs(child, i + 1) for child in node.children.values())\n            if ch not in node.children:\n                return False\n            return dfs(node.children[ch], i + 1)\n        return dfs(self.root, 0)",
+  "check": "wd = WordDictionary()\nwd.add_word(\"bad\"); wd.add_word(\"dad\")\nassert wd.search(\"b.d\") and not wd.search(\"pad\") and wd.search(\"...\")"
+ },
+ {
+  "lesson": "dfs",
+  "title": "Number of Provinces (connected components)",
+  "template": "",
+  "code": "def find_circle_num(is_connected):\n    n = len(is_connected)\n    seen = set()\n\n    def visit(i):\n        seen.add(i)\n        for j in range(n):\n            if is_connected[i][j] and j not in seen:\n                visit(j)\n\n    provinces = 0\n    for i in range(n):\n        if i not in seen:\n            provinces += 1               # a new, unvisited city starts a new group\n            visit(i)                     # mark everything connected to it\n    return provinces",
+  "check": "assert find_circle_num([[1, 1, 0], [1, 1, 0], [0, 0, 1]]) == 2\nassert find_circle_num([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) == 3"
+ },
+ {
+  "lesson": "dfs",
+  "title": "Course Schedule (cycle detection)",
+  "template": "",
+  "code": "def can_finish(num_courses, prerequisites):\n    graph = {i: [] for i in range(num_courses)}\n    for course, pre in prerequisites:\n        graph[course].append(pre)\n\n    state = {}                      # 0 = on the current path, 1 = fully explored\n\n    def has_cycle(node):\n        if state.get(node) == 0:\n            return True             # back edge: we looped onto our own path\n        if state.get(node) == 1:\n            return False            # already proven safe\n        state[node] = 0\n        for pre in graph[node]:\n            if has_cycle(pre):\n                return True\n        state[node] = 1\n        return False\n\n    return not any(has_cycle(c) for c in range(num_courses))",
+  "check": "assert can_finish(2, [[1, 0]]) is True\nassert can_finish(2, [[1, 0], [0, 1]]) is False\nassert can_finish(3, []) is True"
+ },
+ {
+  "lesson": "bfs",
+  "title": "Rotting Oranges (multi-source BFS)",
+  "template": "",
+  "code": "from collections import deque\n\ndef oranges_rotting(grid):\n    rows, cols = len(grid), len(grid[0])\n    queue, fresh = deque(), 0\n    for r in range(rows):\n        for c in range(cols):\n            if grid[r][c] == 2:\n                queue.append((r, c))             # all rotten oranges start together\n            elif grid[r][c] == 1:\n                fresh += 1\n    minutes = 0\n    while queue and fresh:\n        for _ in range(len(queue)):              # one BFS level == one minute\n            r, c = queue.popleft()\n            for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 1:\n                    grid[nr][nc] = 2\n                    fresh -= 1\n                    queue.append((nr, nc))\n        minutes += 1\n    return minutes if fresh == 0 else -1",
+  "check": "assert oranges_rotting([[2, 1, 1], [1, 1, 0], [0, 1, 1]]) == 4\nassert oranges_rotting([[2, 1, 1], [0, 1, 1], [1, 0, 1]]) == -1\nassert oranges_rotting([[0, 2]]) == 0"
+ },
+ {
+  "lesson": "bfs",
+  "title": "Word Ladder (an implicit graph)",
+  "template": "",
+  "code": "from collections import deque\n\ndef ladder_length(begin, end, word_list):\n    words = set(word_list)\n    if end not in words:\n        return 0\n    queue = deque([(begin, 1)])\n    seen = {begin}\n    while queue:\n        word, steps = queue.popleft()\n        if word == end:\n            return steps\n        for i in range(len(word)):\n            for ch in \"abcdefghijklmnopqrstuvwxyz\":\n                nxt = word[:i] + ch + word[i + 1:]\n                if nxt in words and nxt not in seen:\n                    seen.add(nxt)\n                    queue.append((nxt, steps + 1))\n    return 0",
+  "check": "assert ladder_length(\"hit\", \"cog\", [\"hot\", \"dot\", \"dog\", \"lot\", \"log\", \"cog\"]) == 5\nassert ladder_length(\"hit\", \"cog\", [\"hot\", \"dot\", \"dog\", \"lot\", \"log\"]) == 0"
+ },
+ {
+  "lesson": "matrix-traversal",
+  "title": "Number of Islands",
+  "template": "",
+  "code": "def num_islands(grid):\n    if not grid:\n        return 0\n    rows, cols = len(grid), len(grid[0])\n    seen = set()\n\n    def dfs(r, c):\n        if (r < 0 or r >= rows or c < 0 or c >= cols\n                or grid[r][c] == \"0\" or (r, c) in seen):\n            return\n        seen.add((r, c))\n        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n            dfs(r + dr, c + dc)\n\n    islands = 0\n    for r in range(rows):\n        for c in range(cols):\n            if grid[r][c] == \"1\" and (r, c) not in seen:\n                dfs(r, c)                  # flood-fill the whole island\n                islands += 1\n    return islands",
+  "check": "grid = [list(\"11000\"), list(\"11000\"), list(\"00100\"), list(\"00011\")]\nassert num_islands(grid) == 3\nassert num_islands([list(\"111\"), list(\"010\"), list(\"111\")]) == 1\nassert num_islands([]) == 0"
+ },
+ {
+  "lesson": "matrix-traversal",
+  "title": "Surrounded Regions (start from the border)",
+  "template": "",
+  "code": "def solve(board):\n    rows, cols = len(board), len(board[0])\n\n    def mark_safe(r, c):\n        if r < 0 or r >= rows or c < 0 or c >= cols or board[r][c] != \"O\":\n            return\n        board[r][c] = \"S\"                       # safe: connected to the border\n        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n            mark_safe(r + dr, c + dc)\n\n    for r in range(rows):\n        for c in range(cols):\n            if r in (0, rows - 1) or c in (0, cols - 1):\n                mark_safe(r, c)                 # begin at every border cell\n\n    for r in range(rows):\n        for c in range(cols):\n            if board[r][c] == \"O\":\n                board[r][c] = \"X\"               # not safe: capture it\n            elif board[r][c] == \"S\":\n                board[r][c] = \"O\"               # restore the safe cells",
+  "check": "board = [list(\"XXXX\"), list(\"XOOX\"), list(\"XXOX\"), list(\"XOXX\")]\nsolve(board)\nassert [\"\".join(r) for r in board] == [\"XXXX\", \"XXXX\", \"XXXX\", \"XOXX\"]"
+ },
+ {
+  "lesson": "topological-sort",
+  "title": "Course Schedule II",
+  "template": "from collections import defaultdict, deque\n\ndef topo_order(n, edges):                  # edge (a, b): a must come before b\n    graph = defaultdict(list)\n    indegree = [0] * n\n    for a, b in edges:\n        graph[a].append(b)\n        indegree[b] += 1\n    queue = deque(i for i in range(n) if indegree[i] == 0)\n    order = []\n    while queue:\n        node = queue.popleft()\n        order.append(node)\n        for nxt in graph[node]:\n            indegree[nxt] -= 1             # one prerequisite is now satisfied\n            if indegree[nxt] == 0:\n                queue.append(nxt)\n    return order if len(order) == n else []    # shorter means a cycle",
+  "code": "def find_order(num_courses, prerequisites):\n    return topo_order(num_courses, [(pre, course) for course, pre in prerequisites])",
+  "check": "assert find_order(2, [[1, 0]]) == [0, 1]\nassert find_order(4, [[1, 0], [2, 0], [3, 1], [3, 2]]) in ([0, 1, 2, 3], [0, 2, 1, 3])\nassert find_order(2, [[1, 0], [0, 1]]) == []"
+ },
+ {
+  "lesson": "topological-sort",
+  "title": "Alien Dictionary (Premium on LeetCode)",
+  "template": "",
+  "code": "from collections import deque\n\ndef alien_order(words):\n    graph = {c: set() for w in words for c in w}\n    for a, b in zip(words, words[1:]):\n        for x, y in zip(a, b):\n            if x != y:\n                graph[x].add(y)              # x comes before y\n                break\n        else:\n            if len(a) > len(b):\n                return \"\"                    # \"abc\" cannot come before \"ab\"\n    indegree = {c: 0 for c in graph}\n    for c in graph:\n        for nxt in graph[c]:\n            indegree[nxt] += 1\n    queue = deque(c for c in indegree if indegree[c] == 0)\n    out = []\n    while queue:\n        c = queue.popleft()\n        out.append(c)\n        for nxt in graph[c]:\n            indegree[nxt] -= 1\n            if indegree[nxt] == 0:\n                queue.append(nxt)\n    return \"\".join(out) if len(out) == len(graph) else \"\"",
+  "check": "assert alien_order([\"wrt\", \"wrf\", \"er\", \"ett\", \"rftt\"]) == \"wertf\"\nassert alien_order([\"z\", \"x\"]) == \"zx\"\nassert alien_order([\"z\", \"x\", \"z\"]) == \"\"\nassert alien_order([\"abc\", \"ab\"]) == \"\""
+ },
+ {
+  "lesson": "union-find",
+  "title": "Redundant Connection",
+  "template": "class DSU:\n    def __init__(self, n):\n        self.parent = list(range(n))\n        self.size = [1] * n\n        self.components = n\n\n    def find(self, x):\n        while self.parent[x] != x:\n            self.parent[x] = self.parent[self.parent[x]]    # path compression (halving)\n            x = self.parent[x]\n        return x\n\n    def union(self, a, b):\n        ra, rb = self.find(a), self.find(b)\n        if ra == rb:\n            return False                                     # already connected\n        if self.size[ra] < self.size[rb]:\n            ra, rb = rb, ra\n        self.parent[rb] = ra                                 # attach the smaller tree\n        self.size[ra] += self.size[rb]\n        self.components -= 1\n        return True",
+  "code": "def find_redundant_connection(edges):\n    dsu = DSU(len(edges) + 1)\n    for a, b in edges:\n        if not dsu.union(a, b):        # a and b were already connected\n            return [a, b]\n    return []",
+  "check": "assert find_redundant_connection([[1, 2], [1, 3], [2, 3]]) == [2, 3]\nassert find_redundant_connection([[1, 2], [2, 3], [3, 4], [1, 4], [1, 5]]) == [1, 4]"
+ },
+ {
+  "lesson": "union-find",
+  "title": "Satisfiability of Equality Equations",
+  "template": "",
+  "code": "def equations_possible(equations):\n    parent = list(range(26))\n\n    def find(x):\n        while parent[x] != x:\n            parent[x] = parent[parent[x]]\n            x = parent[x]\n        return x\n\n    for eq in equations:                       # first, union everything equal\n        if eq[1] == \"=\":\n            parent[find(ord(eq[0]) - 97)] = find(ord(eq[3]) - 97)\n    for eq in equations:                       # then check every inequality\n        if eq[1] == \"!\" and find(ord(eq[0]) - 97) == find(ord(eq[3]) - 97):\n            return False\n    return True",
+  "check": "assert equations_possible([\"a==b\", \"b!=a\"]) is False\nassert equations_possible([\"b==a\", \"a==b\"]) is True\nassert equations_possible([\"a==b\", \"b==c\", \"a==c\"]) is True\nassert equations_possible([\"a==b\", \"b!=c\", \"c==a\"]) is False"
+ },
+ {
+  "lesson": "shortest-path",
+  "title": "Network Delay Time",
+  "template": "",
+  "code": "import heapq\nfrom collections import defaultdict\n\ndef network_delay_time(times, n, k):\n    graph = defaultdict(list)\n    for u, v, w in times:\n        graph[u].append((v, w))\n\n    dist = {}\n    heap = [(0, k)]\n    while heap:\n        d, node = heapq.heappop(heap)\n        if node in dist:\n            continue\n        dist[node] = d                       # the first time a node is popped is its shortest distance\n        for neighbor, w in graph[node]:\n            if neighbor not in dist:\n                heapq.heappush(heap, (d + w, neighbor))\n\n    return max(dist.values()) if len(dist) == n else -1",
+  "check": "assert network_delay_time([[2, 1, 1], [2, 3, 1], [3, 4, 1]], 4, 2) == 2\nassert network_delay_time([[1, 2, 1]], 2, 1) == 1\nassert network_delay_time([[1, 2, 1]], 2, 2) == -1"
+ },
+ {
+  "lesson": "shortest-path",
+  "title": "Path With Minimum Effort (a Dijkstra variant)",
+  "template": "",
+  "code": "import heapq\n\ndef minimum_effort_path(heights):\n    rows, cols = len(heights), len(heights[0])\n    best = [[float(\"inf\")] * cols for _ in range(rows)]\n    best[0][0] = 0\n    heap = [(0, 0, 0)]                            # (effort so far, row, col)\n    while heap:\n        effort, r, c = heapq.heappop(heap)\n        if (r, c) == (rows - 1, cols - 1):\n            return effort\n        if effort > best[r][c]:\n            continue\n        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n            nr, nc = r + dr, c + dc\n            if 0 <= nr < rows and 0 <= nc < cols:\n                step = abs(heights[nr][nc] - heights[r][c])\n                nxt = max(effort, step)           # path cost = the worst step, not the sum\n                if nxt < best[nr][nc]:\n                    best[nr][nc] = nxt\n                    heapq.heappush(heap, (nxt, nr, nc))\n    return 0",
+  "check": "assert minimum_effort_path([[1, 2, 2], [3, 8, 2], [5, 3, 5]]) == 2\nassert minimum_effort_path([[1, 2, 3], [3, 8, 4], [5, 3, 5]]) == 1\nassert minimum_effort_path([[1]]) == 0"
+ },
+ {
+  "lesson": "backtracking",
+  "title": "Subsets",
+  "template": "",
+  "code": "def subsets(nums):\n    result = []\n    path = []\n\n    def backtrack(start):\n        result.append(path[:])\n        for i in range(start, len(nums)):\n            path.append(nums[i])\n            backtrack(i + 1)\n            path.pop()\n\n    backtrack(0)\n    return result",
+  "check": "assert sorted(map(sorted, subsets([1, 2, 3]))) == sorted(map(sorted, [[], [1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]))"
+ },
+ {
+  "lesson": "backtracking",
+  "title": "Combination Sum",
+  "template": "",
+  "code": "def combination_sum(candidates, target):\n    result = []\n    path = []\n\n    def backtrack(start, remaining):\n        if remaining == 0:\n            result.append(path[:])\n            return\n        if remaining < 0:\n            return\n        for i in range(start, len(candidates)):\n            path.append(candidates[i])\n            backtrack(i, remaining - candidates[i])  # i, not i+1: reuse allowed\n            path.pop()\n\n    backtrack(0, target)\n    return result",
+  "check": "assert sorted(map(sorted, combination_sum([2, 3, 6, 7], 7))) == [[2, 2, 3], [7]]"
+ },
+ {
+  "lesson": "greedy",
+  "title": "Gas Station",
+  "template": "",
+  "code": "def can_complete_circuit(gas, cost):\n    if sum(gas) < sum(cost):\n        return -1\n\n    total = 0\n    start = 0\n    for i in range(len(gas)):\n        total += gas[i] - cost[i]\n        if total < 0:\n            start = i + 1\n            total = 0\n    return start",
+  "check": "assert can_complete_circuit([1, 2, 3, 4, 5], [3, 4, 5, 1, 2]) == 3\nassert can_complete_circuit([2, 3, 4], [3, 4, 3]) == -1"
+ },
+ {
+  "lesson": "greedy",
+  "title": "Jump Game II",
+  "template": "",
+  "code": "def jump(nums):\n    jumps = 0\n    curr_end = 0\n    farthest = 0\n    for i in range(len(nums) - 1):\n        farthest = max(farthest, i + nums[i])\n        if i == curr_end:\n            jumps += 1\n            curr_end = farthest\n    return jumps",
+  "check": "assert jump([2, 3, 1, 1, 4]) == 2\nassert jump([1]) == 0"
+ },
+ {
+  "lesson": "dp-1d",
+  "title": "House Robber",
+  "template": "",
+  "code": "def rob(nums):\n    prev, curr = 0, 0\n    for n in nums:\n        prev, curr = curr, max(curr, prev + n)\n    return curr",
+  "check": "assert rob([1, 2, 3, 1]) == 4\nassert rob([2, 7, 9, 3, 1]) == 12"
+ },
+ {
+  "lesson": "dp-1d",
+  "title": "Coin Change",
+  "template": "",
+  "code": "def coin_change(coins, amount):\n    dp = [0] + [float(\"inf\")] * amount\n    for a in range(1, amount + 1):\n        for c in coins:\n            if c <= a:\n                dp[a] = min(dp[a], dp[a - c] + 1)\n    return dp[amount] if dp[amount] != float(\"inf\") else -1",
+  "check": "assert coin_change([1, 2, 5], 11) == 3\nassert coin_change([2], 3) == -1"
+ },
+ {
+  "lesson": "dp-2d",
+  "title": "Longest Common Subsequence",
+  "template": "",
+  "code": "def longest_common_subsequence(text1, text2):\n    m, n = len(text1), len(text2)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if text1[i - 1] == text2[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1] + 1\n            else:\n                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])\n    return dp[m][n]",
+  "check": "assert longest_common_subsequence(\"abcde\", \"ace\") == 3"
+ },
+ {
+  "lesson": "dp-2d",
+  "title": "Edit Distance",
+  "template": "",
+  "code": "def min_distance(word1, word2):\n    m, n = len(word1), len(word2)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(m + 1):\n        dp[i][0] = i\n    for j in range(n + 1):\n        dp[0][j] = j\n\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if word1[i - 1] == word2[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1]\n            else:\n                dp[i][j] = 1 + min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])\n    return dp[m][n]",
+  "check": "assert min_distance(\"horse\", \"ros\") == 3\nassert min_distance(\"\", \"a\") == 1"
+ },
+ {
+  "lesson": "combining-patterns",
+  "title": "Binary Search + Greedy: Capacity To Ship Packages Within D Days",
+  "template": "",
+  "code": "def ship_within_days(weights, days):\n    def feasible(capacity):                  # greedy check: pack as much as fits each day\n        used, load = 1, 0\n        for w in weights:\n            if load + w > capacity:\n                used += 1\n                load = 0\n            load += w\n        return used <= days\n\n    lo, hi = max(weights), sum(weights)      # answer lies between the heaviest package and everything at once\n    while lo < hi:\n        mid = (lo + hi) // 2\n        if feasible(mid):\n            hi = mid\n        else:\n            lo = mid + 1\n    return lo",
+  "check": "assert ship_within_days([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 5) == 15\nassert ship_within_days([3, 2, 2, 4, 1, 4], 3) == 6\nassert ship_within_days([1, 2, 3, 1, 1], 4) == 3"
+ },
+ {
+  "lesson": "combining-patterns",
+  "title": "DFS + Memoisation: Longest Increasing Path in a Matrix",
+  "template": "",
+  "code": "from functools import lru_cache\n\ndef longest_increasing_path(matrix):\n    rows, cols = len(matrix), len(matrix[0])\n\n    @lru_cache(maxsize=None)\n    def dfs(r, c):                               # longest path starting at (r, c)\n        best = 1\n        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n            nr, nc = r + dr, c + dc\n            if 0 <= nr < rows and 0 <= nc < cols and matrix[nr][nc] > matrix[r][c]:\n                best = max(best, 1 + dfs(nr, nc))\n        return best\n\n    return max(dfs(r, c) for r in range(rows) for c in range(cols))",
+  "check": "assert longest_increasing_path([[9, 9, 4], [6, 6, 8], [2, 1, 1]]) == 4\nassert longest_increasing_path([[3, 4, 5], [3, 2, 6], [2, 2, 1]]) == 4\nassert longest_increasing_path([[1]]) == 1"
+ },
+ {
+  "lesson": "combining-patterns",
+  "title": "Intervals + Prefix Sums: Car Pooling",
+  "template": "",
+  "code": "def car_pooling(trips, capacity):\n    delta = [0] * 1001                     # difference array over road positions\n    for passengers, start, end in trips:\n        delta[start] += passengers         # they get on here\n        delta[end] -= passengers           # and off here (not counted at 'end')\n    load = 0\n    for change in delta:\n        load += change                     # a running sum gives the load at each position\n        if load > capacity:\n            return False\n    return True",
+  "check": "assert car_pooling([[2, 1, 5], [3, 3, 7]], 4) is False\nassert car_pooling([[2, 1, 5], [3, 3, 7]], 5) is True\nassert car_pooling([[2, 1, 5], [3, 5, 7]], 3) is True"
+ },
+ {
+  "lesson": "combining-patterns",
+  "title": "Sliding Window + Counting: Longest Repeating Character Replacement",
+  "template": "",
+  "code": "from collections import Counter\n\ndef character_replacement(s, k):\n    counts = Counter()\n    left = best = max_freq = 0\n    for right, ch in enumerate(s):\n        counts[ch] += 1\n        max_freq = max(max_freq, counts[ch])            # most common letter in the window (never lowered)\n        while (right - left + 1) - max_freq > k:        # more than k letters need changing: shrink\n            counts[s[left]] -= 1\n            left += 1\n        best = max(best, right - left + 1)\n    return best",
+  "check": "assert character_replacement(\"ABAB\", 2) == 4\nassert character_replacement(\"AABABBA\", 1) == 4\nassert character_replacement(\"A\", 0) == 1"
+ },
+ {
+  "lesson": "combining-patterns",
+  "title": "Trie + Backtracking: Word Search II",
+  "template": "",
+  "code": "def find_words(board, words):\n    trie = {}\n    for w in words:\n        node = trie\n        for ch in w:\n            node = node.setdefault(ch, {})\n        node[\"$\"] = w                          # store the word at its end node\n\n    rows, cols = len(board), len(board[0])\n    found = []\n\n    def dfs(r, c, node):\n        ch = board[r][c]\n        nxt = node.get(ch)\n        if not nxt:\n            return                             # no word continues with this letter: prune\n        if \"$\" in nxt:\n            found.append(nxt.pop(\"$\"))         # pop so each word is reported once\n        board[r][c] = \"#\"                      # choose\n        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n            nr, nc = r + dr, c + dc\n            if 0 <= nr < rows and 0 <= nc < cols and board[nr][nc] != \"#\":\n                dfs(nr, nc, nxt)               # explore\n        board[r][c] = ch                       # unchoose\n\n    for r in range(rows):\n        for c in range(cols):\n            dfs(r, c, trie)\n    return found",
+  "check": "board = [[\"o\", \"a\", \"a\", \"n\"], [\"e\", \"t\", \"a\", \"e\"], [\"i\", \"h\", \"k\", \"r\"], [\"i\", \"f\", \"l\", \"v\"]]\nassert sorted(find_words(board, [\"oath\", \"pea\", \"eat\", \"rain\"])) == [\"eat\", \"oath\"]\nassert find_words([[\"a\", \"b\"], [\"c\", \"d\"]], [\"abcb\"]) == []"
+ }
+]

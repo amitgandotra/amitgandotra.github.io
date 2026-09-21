@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fast &amp; Slow Pointers — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "fast-slow-pointers",
+  summary: "Two pointers move along the same sequence at different speeds. If there is a cycle, the fast pointer eventually laps the slow one; if there is not, fast reaches the end exactly when slow is at the middle. It needs O(1) space where a visited set would need O(n).",
+  recognize: [
+    "Detect a <strong>cycle</strong> in a linked list, an array, or a repeating sequence of states",
+    "Find the <strong>middle</strong> of a linked list without knowing its length",
+    "Find where a cycle <strong>starts</strong>",
+    "'n-th node from the end' (a fixed gap between two runners)",
+    "'Find the duplicate number without extra space' or 'does it reach 1 or loop forever' (happy number)",
+  ],
+  template: {
+    note: "Floyd's tortoise and hare. Slow moves one step, fast moves two.",
+    code: `def has_cycle(head):
+    slow = fast = head
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+        if slow is fast:
+            return True
+    return False`,
+  },
+  examples: [
+    {
+      title: "Linked List Cycle II: find where the cycle starts",
+      prompt: "Return the node where a cycle begins, or <code>None</code> if the list has no cycle.",
+      code: `def detect_cycle(head):
+    slow = fast = head
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+        if slow is fast:                 # phase 1: they meet inside the cycle
+            break
+    else:
+        return None
+
+    slow = head                          # phase 2: restart one pointer at the head
+    while slow is not fast:
+        slow = slow.next
+        fast = fast.next
+    return slow                          # they meet at the cycle start`,
+      explanation: "Phase 1 detects the cycle. Phase 2 works because the distance from the head to the cycle start equals the distance from the meeting point to the cycle start, going around. Advance both one step at a time and they meet exactly there.",
+      complexity: "Time: O(n) · Space: O(1)",
+      complexityWhy: "Fast catches slow within at most one lap of the cycle once both are inside it, and the second phase walks at most n steps. Only two pointers are kept.",
+    },
+    {
+      title: "Remove Nth Node From End of List",
+      prompt: "Remove the <strong>n-th node from the end</strong> of a linked list in <strong>one pass</strong>.",
+      code: `def remove_nth_from_end(head, n):
+    dummy = ListNode(0, head)            # handles removing the head itself
+    lead = trail = dummy
+    for _ in range(n):
+        lead = lead.next                 # open a gap of n nodes
+    while lead.next:
+        lead = lead.next
+        trail = trail.next
+    trail.next = trail.next.next         # trail sits just before the target
+    return dummy.next`,
+      explanation: "This is the runner variant: keep two pointers a fixed gap apart. When the lead reaches the last node, the trailing pointer is right before the node to delete. The dummy head removes the special case of deleting the first node.",
+      complexity: "Time: O(n) · Space: O(1)",
+      complexityWhy: "The lead pointer walks the list once, and the trailing pointer follows at most the same number of steps. No extra structures are allocated.",
+    },
+  ],
+  gotchas: [
+    "Always check <code>fast and fast.next</code> in that order, so <code>fast.next.next</code> is never evaluated on <code>None</code>.",
+    "Compare <em>nodes</em> with <code>is</code>, not values: two different nodes can hold equal values.",
+    "The pattern also works on arrays and number sequences: treat <code>i -&gt; nums[i]</code> or <code>x -&gt; step(x)</code> as the 'next pointer'.",
+    "A dummy head makes deletions at the front uniform. Forgetting it is the classic off-by-one when n equals the list length.",
+  ],
+  practiceProblems: [
+    {
+      n: 141,
+      title: "Linked List Cycle",
+      slug: "linked-list-cycle",
+      level: "Easy",
+    },
+    {
+      n: 876,
+      title: "Middle of the Linked List",
+      slug: "middle-of-the-linked-list",
+      level: "Easy",
+    },
+    {
+      n: 202,
+      title: "Happy Number",
+      slug: "happy-number",
+      level: "Easy",
+    },
+    {
+      n: 234,
+      title: "Palindrome Linked List",
+      slug: "palindrome-linked-list",
+      level: "Easy",
+    },
+    {
+      n: 142,
+      title: "Linked List Cycle II",
+      slug: "linked-list-cycle-ii",
+      level: "Medium",
+    },
+    {
+      n: 19,
+      title: "Remove Nth Node From End of List",
+      slug: "remove-nth-node-from-end-of-list",
+      level: "Medium",
+    },
+    {
+      n: 287,
+      title: "Find the Duplicate Number",
+      slug: "find-the-duplicate-number",
+      level: "Medium",
+    },
+  ],
+  quiz: [
+    {
+      question: "Why do the slow and fast pointers always meet if the list has a cycle?",
+      options: ["Inside the cycle, fast gains one node per step on slow, so the gap shrinks to zero", "Fast is faster, so it is always ahead", "They both start at the cycle", "Pure luck"],
+      correct: 0,
+      explanation: "The relative speed is one node per step, so the gap between them decreases by one each step until they coincide.",
+    },
+    {
+      question: "How do you find the middle of a linked list in one pass?",
+      options: ["When fast reaches the end, slow is at the middle", "Count the nodes first, then walk halfway", "Reverse the list", "Use recursion only"],
+      correct: 0,
+      explanation: "Fast covers twice the distance of slow, so slow is halfway when fast finishes.",
+    },
+    {
+      question: "After slow meets fast inside a cycle, how do you find the cycle's starting node?",
+      options: ["Reset one pointer to the head and advance both one step at a time; they meet at the start", "Restart only the fast pointer", "It is impossible", "Use binary search"],
+      correct: 0,
+      explanation: "The distance from the head to the start equals the distance from the meeting point to the start (going around the cycle).",
+    },
+    {
+      question: "How does the space use compare with the visited-set approach to cycle detection?",
+      options: ["O(1) versus O(n)", "O(n) versus O(1)", "Both are O(n)", "O(log n) versus O(n)"],
+      correct: 0,
+      explanation: "Two pointers need constant memory; a set of visited nodes grows with the list.",
+    },
+    {
+      question: "Which problem applies fast/slow pointers to something that is NOT a linked list?",
+      options: ["Happy Number and Find the Duplicate Number", "Valid Parentheses", "Merge k Sorted Lists", "Number of Islands"],
+      correct: 0,
+      explanation: "Both define a sequence x -> next(x) that either reaches a fixed point or cycles.",
+    },
+  ],
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

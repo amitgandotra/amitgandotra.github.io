@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Security, Secrets &amp; Observability — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html">Patterns</a>
+      <a href="../integration/index.html" class="active">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Enterprise customers will put your integration through a security review and expect you to diagnose problems fast. That means protecting secrets and personal data, granting least privilege, and emitting logs, metrics, and audit trails that let you answer 'what happened to record 42?' in minutes.",
+  keyHeading: "What security and operations teams look for",
+  keyPoints: [
+    "<strong>Secrets</strong>: environment variables or a secrets manager; never in code, logs, or URLs. Support rotation.",
+    "<strong>Least privilege</strong>: read-only where possible, narrow OAuth scopes, dedicated service accounts.",
+    "<strong>Data protection</strong>: TLS in transit, encryption at rest, minimize what you store, redact PII in logs.",
+    "<strong>Structured logging</strong> with a <em>correlation ID</em> that follows a request across systems.",
+    "<strong>Metrics</strong>: success/failure counts, latency, queue depth, age of oldest unprocessed item.",
+    "<strong>Audit trail</strong>: who or what changed which record and when. Compliance regimes (SOC 2, HIPAA) require it.",
+    "<strong>Alerting</strong> on symptoms customers feel (data late, errors rising), not just CPU.",
+  ],
+  template: {
+    heading: "Structured logs with a correlation ID",
+    label: "python",
+    note: "contextvars carries the ID through code (and async tasks) without passing it everywhere.",
+    code: `import json, logging, uuid
+from contextvars import ContextVar
+
+correlation_id = ContextVar("correlation_id", default="-")
+
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        return json.dumps({
+            "level": record.levelname,
+            "msg": record.getMessage(),
+            "correlation_id": correlation_id.get(),
+        })
+
+log = logging.getLogger("integration")
+handler = logging.StreamHandler()
+handler.setFormatter(JsonFormatter())
+log.addHandler(handler)
+log.setLevel(logging.INFO)
+
+correlation_id.set(str(uuid.uuid4())[:8])
+log.info("sync started")`,
+  },
+  examples: [
+    {
+      title: "Redacting secrets and PII before logging",
+      prompt: "A log filter scrubs sensitive keys so debugging output is safe to share with a customer.",
+      code: `SENSITIVE = {"password", "token", "authorization", "ssn", "api_key"}
+
+def redact(obj):
+    if isinstance(obj, dict):
+        return {k: ("***" if k.lower() in SENSITIVE else redact(v)) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [redact(v) for v in obj]
+    return obj
+
+payload = {"user": "ada", "Authorization": "Bearer abc123",
+           "profile": {"ssn": "123-45-6789", "city": "London"}}
+print(redact(payload))`,
+      explanation: "Redaction is recursive so nested structures are covered. Apply it centrally (a logging filter or wrapper) rather than remembering at every log call. Also avoid logging full request/response bodies by default.",
+      output: "{'user': 'ada', 'Authorization': '***', 'profile': {'ssn': '***', 'city': 'London'}}",
+    },
+    {
+      title: "Simple metrics for an integration",
+      prompt: "Count outcomes and track age of the oldest pending item. These are the numbers you alert on.",
+      code: `from collections import Counter
+
+class Metrics:
+    def __init__(self):
+        self.counts = Counter()
+        self.pending_since = {}          # item_id -> timestamp received
+
+    def received(self, item_id, ts):
+        self.pending_since[item_id] = ts
+
+    def done(self, item_id, ok):
+        self.pending_since.pop(item_id, None)
+        self.counts["success" if ok else "failure"] += 1
+
+    def oldest_pending_age(self, now):
+        return max((now - t for t in self.pending_since.values()), default=0)
+
+m = Metrics()
+m.received("a", 100); m.received("b", 130)
+m.done("a", ok=True)
+print(dict(m.counts), m.oldest_pending_age(now=200))`,
+      explanation: "'Oldest pending age' catches stuck integrations that produce no errors at all (nothing fails, nothing moves). Real systems export such numbers to Prometheus, CloudWatch, or Datadog.",
+      output: "{'success': 1} 70",
+    },
+  ],
+  gotchas: [
+    "Logging bodies or headers that contain tokens and personal data.",
+    "Secrets that can't be rotated without a redeploy.",
+    "Logs without a correlation ID, making cross-system tracing guesswork.",
+    "Alerting only on hard errors. Silent stalls and data lag go unnoticed.",
+    "Broad credentials 'for convenience'. Reviewers will flag them and so will auditors.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Set the correlation ID from an inbound <code>X-Request-ID</code> header (or generate one) and propagate it to outbound calls.",
+    "Add a redaction step to your <code>JsonFormatter</code>.",
+    "Define three alerts for an integration and the exact metric for each.",
+  ],
+  quiz: [
+    {
+      question: "What is a correlation ID for?",
+      options: [
+        "Tracing one request across services and logs",
+        "Encrypting traffic",
+        "Sorting a database",
+        "Rate limiting",
+      ],
+      correct: 0,
+      explanation: "It links log lines from different systems belonging to the same operation.",
+    },
+    {
+      question: "Where should secrets live?",
+      options: [
+        "Environment variables or a secrets manager",
+        "Source code",
+        "Log files",
+        "URLs",
+      ],
+      correct: 0,
+      explanation: "This allows rotation and keeps secrets out of version control.",
+    },
+    {
+      question: "What does least privilege mean?",
+      options: [
+        "Grant only the access needed for the job",
+        "Give admin to be safe",
+        "Share one account",
+        "Disable authentication",
+      ],
+      correct: 0,
+      explanation: "Limiting scope reduces the blast radius of a leak.",
+    },
+    {
+      question: "Which metric detects a stalled integration that raises no errors?",
+      options: [
+        "Age of the oldest unprocessed item",
+        "CPU temperature",
+        "Number of imports",
+        "Log line count",
+      ],
+      correct: 0,
+      explanation: "If items stop moving, their age grows even with zero failures.",
+    },
+    {
+      question: "Why redact centrally instead of at each log call?",
+      options: [
+        "Developers forget; a central filter guarantees consistent protection",
+        "It makes logs longer",
+        "Python requires it",
+        "It speeds up code",
+      ],
+      correct: 0,
+      explanation: "Consistency beats per-call discipline.",
+    },
+  ],
+  id: "security-observability",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shortest Path (Dijkstra) — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  id: "shortest-path",
+  summary: "When edges have different costs, BFS is no longer enough. Dijkstra's algorithm keeps a min-heap of (distance, node), repeatedly finalises the closest unvisited node and relaxes its neighbours. It needs non-negative weights; Bellman-Ford handles negative weights and 'at most k edges' limits.",
+  recognize: [
+    "<strong>Cheapest / minimum cost / fastest</strong> route with weighted edges",
+    "'Network delay time', travel time, price, distance",
+    "'At most k stops' (Bellman-Ford or Dijkstra over a state)",
+    "Variants: minimise the largest step (minimum effort) or maximise a probability",
+    "A grid where cells have different costs",
+  ],
+  template: {
+    note: "Dijkstra with a min-heap. Skip stale heap entries whose distance is already worse.",
+    code: `import heapq
+
+def dijkstra(graph, start):
+    dist = {start: 0}
+    heap = [(0, start)]
+    while heap:
+        d, node = heapq.heappop(heap)
+        if d > dist.get(node, float("inf")):
+            continue                        # stale entry: a shorter path was found already
+        for neighbor, weight in graph[node]:
+            nd = d + weight
+            if nd < dist.get(neighbor, float("inf")):
+                dist[neighbor] = nd
+                heapq.heappush(heap, (nd, neighbor))
+    return dist`,
+  },
+  examples: [
+    {
+      title: "Network Delay Time",
+      prompt: "A signal is sent from node <code>k</code>. Given directed weighted edges <code>(u, v, w)</code>, return the time for <strong>all n nodes</strong> to receive it, or <code>-1</code> if impossible.",
+      code: `import heapq
+from collections import defaultdict
+
+def network_delay_time(times, n, k):
+    graph = defaultdict(list)
+    for u, v, w in times:
+        graph[u].append((v, w))
+
+    dist = {}
+    heap = [(0, k)]
+    while heap:
+        d, node = heapq.heappop(heap)
+        if node in dist:
+            continue
+        dist[node] = d                       # the first time a node is popped is its shortest distance
+        for neighbor, w in graph[node]:
+            if neighbor not in dist:
+                heapq.heappush(heap, (d + w, neighbor))
+
+    return max(dist.values()) if len(dist) == n else -1`,
+      explanation: "Pop the closest unvisited node, lock in its distance, and push its neighbours with updated distances. The signal reaches everyone when the <em>farthest</em> node is reached, so the answer is the maximum of the shortest distances.",
+      complexity: "Time: O(E log V) · Space: O(V + E)",
+      complexityWhy: "Each edge can add at most one heap entry, and each heap operation costs O(log V). The adjacency list stores E edges and the distance map up to V entries.",
+    },
+    {
+      title: "Path With Minimum Effort (a Dijkstra variant)",
+      prompt: "In a grid of heights, the <strong>effort</strong> of a route is the <strong>largest</strong> absolute height difference between consecutive cells. Return the smallest possible effort from top-left to bottom-right.",
+      code: `import heapq
+
+def minimum_effort_path(heights):
+    rows, cols = len(heights), len(heights[0])
+    best = [[float("inf")] * cols for _ in range(rows)]
+    best[0][0] = 0
+    heap = [(0, 0, 0)]                            # (effort so far, row, col)
+    while heap:
+        effort, r, c = heapq.heappop(heap)
+        if (r, c) == (rows - 1, cols - 1):
+            return effort
+        if effort > best[r][c]:
+            continue
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < rows and 0 <= nc < cols:
+                step = abs(heights[nr][nc] - heights[r][c])
+                nxt = max(effort, step)           # path cost = the worst step, not the sum
+                if nxt < best[nr][nc]:
+                    best[nr][nc] = nxt
+                    heapq.heappush(heap, (nxt, nr, nc))
+    return 0`,
+      explanation: "The structure is identical to Dijkstra, but the cost of a path is the <em>maximum</em> edge instead of the sum. That still works because extending a path never lowers its cost, so the smallest-cost-first order stays valid.",
+      complexity: "Time: O(rows × cols × log(rows × cols)) · Space: O(rows × cols)",
+      complexityWhy: "Each cell can be pushed a small constant number of times (once per improving neighbour), and each heap operation costs a logarithm of the heap size.",
+    },
+  ],
+  gotchas: [
+    "Dijkstra requires non-negative weights. With negative edges use Bellman-Ford.",
+    "Forgetting to skip stale heap entries. It stays correct but does redundant work.",
+    "Using Dijkstra when every edge costs the same. Plain BFS is simpler and faster.",
+    "For 'at most k stops', the state is (node, stops used). A plain node-only distance table is wrong.",
+  ],
+  practiceProblems: [
+    {
+      n: 743,
+      title: "Network Delay Time",
+      slug: "network-delay-time",
+      level: "Medium",
+    },
+    {
+      n: 1631,
+      title: "Path With Minimum Effort",
+      slug: "path-with-minimum-effort",
+      level: "Medium",
+    },
+    {
+      n: 1514,
+      title: "Path with Maximum Probability",
+      slug: "path-with-maximum-probability",
+      level: "Medium",
+    },
+    {
+      n: 787,
+      title: "Cheapest Flights Within K Stops",
+      slug: "cheapest-flights-within-k-stops",
+      level: "Medium",
+    },
+    {
+      n: 505,
+      title: "The Maze II",
+      slug: "the-maze-ii",
+      level: "Medium",
+      premium: true,
+    },
+    {
+      n: 778,
+      title: "Swim in Rising Water",
+      slug: "swim-in-rising-water",
+      level: "Hard",
+    },
+  ],
+  quiz: [
+    {
+      question: "What does Dijkstra's algorithm require of the edge weights?",
+      options: ["They must be non-negative", "They must all be equal", "They must be integers", "There is no requirement"],
+      correct: 0,
+      explanation: "The greedy finalisation of the closest node relies on distances never decreasing as you extend a path.",
+    },
+    {
+      question: "Which data structure makes Dijkstra efficient?",
+      options: ["A min-heap (priority queue)", "A stack", "A trie", "A hash set"],
+      correct: 0,
+      explanation: "It surfaces the closest unvisited node in O(log V).",
+    },
+    {
+      question: "The graph has negative edge weights. What should you use?",
+      options: ["Bellman-Ford", "BFS", "Dijkstra", "Union-Find"],
+      correct: 0,
+      explanation: "Bellman-Ford tolerates negative weights and can detect negative cycles.",
+    },
+    {
+      question: "Why skip a popped heap entry whose distance is worse than the recorded one?",
+      options: ["It is stale: a shorter path to that node was already found", "It is a bug", "The node is unreachable", "It must be re-pushed"],
+      correct: 0,
+      explanation: "Heaps do not support decrease-key, so outdated entries are simply ignored when they surface.",
+    },
+    {
+      question: "In Path With Minimum Effort, what is minimised along a path?",
+      options: ["The largest single height difference, not the sum", "The sum of all height differences", "The number of cells", "The total height"],
+      correct: 0,
+      explanation: "Dijkstra adapts to any cost that does not decrease when a path is extended, such as a maximum.",
+    },
+  ],
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>

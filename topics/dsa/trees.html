@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Trees — Becoming FDE</title>
+<title>Binary Tree Traversal — Becoming FDE</title>
 <link rel="stylesheet" href="../../css/style.css" />
 </head>
 <body>
@@ -11,11 +11,6 @@
 <header class="site-header">
   <div class="container">
     <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
-    <nav class="site-nav">
-      <a href="../python/index.html">Python</a>
-      <a href="index.html" class="active">DSA</a>
-      <a href="../../index.html">All Topics</a>
-    </nav>
   </div>
 </header>
 
@@ -35,9 +30,9 @@
   <div class="container">Becoming FDE — build in public, ship in prod.</div>
 </footer>
 
-<script src="../../js/data/dsa-patterns.js"></script>
+<script src="../../js/data/site.js"></script>
 <script src="../../js/progress.js"></script>
-<script src="../../js/dsa-nav.js"></script>
+<script src="../../js/site-shell.js"></script>
 <script src="../../js/highlight.js"></script>
 <script src="../../js/quiz.js"></script>
 <script>
@@ -98,23 +93,65 @@ def level_order(root):
     },
   ],
   practiceProblems: [
-    "Maximum Depth of Binary Tree",
-    "Same Tree",
-    "Invert Binary Tree",
-    "Binary Tree Level Order Traversal",
-    "Validate Binary Search Tree",
-    "Lowest Common Ancestor of a BST",
-    "Serialize and Deserialize Binary Tree",
+    {
+      n: 94,
+      title: "Binary Tree Inorder Traversal",
+      slug: "binary-tree-inorder-traversal",
+      level: "Easy",
+    },
+    {
+      n: 104,
+      title: "Maximum Depth of Binary Tree",
+      slug: "maximum-depth-of-binary-tree",
+      level: "Easy",
+    },
+    {
+      n: 226,
+      title: "Invert Binary Tree",
+      slug: "invert-binary-tree",
+      level: "Easy",
+    },
+    {
+      n: 102,
+      title: "Binary Tree Level Order Traversal",
+      slug: "binary-tree-level-order-traversal",
+      level: "Medium",
+    },
+    {
+      n: 98,
+      title: "Validate Binary Search Tree",
+      slug: "validate-binary-search-tree",
+      level: "Medium",
+    },
+    {
+      n: 230,
+      title: "Kth Smallest Element in a BST",
+      slug: "kth-smallest-element-in-a-bst",
+      level: "Medium",
+    },
+    {
+      n: 236,
+      title: "Lowest Common Ancestor of a Binary Tree",
+      slug: "lowest-common-ancestor-of-a-binary-tree",
+      level: "Medium",
+    },
+    {
+      n: 105,
+      title: "Construct Binary Tree from Preorder and Inorder Traversal",
+      slug: "construct-binary-tree-from-preorder-and-inorder-traversal",
+      level: "Medium",
+    },
+    {
+      n: 297,
+      title: "Serialize and Deserialize Binary Tree",
+      slug: "serialize-and-deserialize-binary-tree",
+      level: "Hard",
+    },
   ],
   quiz: [
     {
       question: "Most tree problems reduce to...",
-      options: [
-        "Combining information returned from the left and right subtrees",
-        "Sorting the tree",
-        "Converting the tree to a linked list first",
-        "Applying dynamic programming exclusively",
-      ],
+      options: ["Combining information returned from the left and right subtrees", "Sorting the tree", "Converting the tree to a linked list first", "Applying dynamic programming exclusively"],
       correct: 0,
       explanation: "Recursive DFS naturally computes a value per subtree and combines left + right + current node into a result.",
     },
@@ -126,40 +163,25 @@ def level_order(root):
     },
     {
       question: "Why does the level-order BFS template snapshot len(queue) before the inner loop?",
-      options: [
-        "To know exactly how many nodes belong to the current level, before children get appended",
-        "It's purely cosmetic and not necessary",
-        "To reverse the traversal order",
-        "To detect cycles in the tree",
-      ],
+      options: ["To know exactly how many nodes belong to the current level, before children get appended", "It's purely cosmetic and not necessary", "To reverse the traversal order", "To detect cycles in the tree"],
       correct: 0,
       explanation: "Without the snapshot, appended children would mix into the current level's iteration count.",
     },
     {
       question: "In Maximum Depth of Binary Tree, why does the base case return 0 for a null node?",
-      options: [
-        "A null node contributes no depth, so 0 is the correct identity value for the max() combination",
-        "It's an arbitrary choice with no real reason",
-        "It should actually return 1",
-        "It should actually return -1",
-      ],
+      options: ["A null node contributes no depth, so 0 is the correct identity value for the max() combination", "It's an arbitrary choice with no real reason", "It should actually return 1", "It should actually return -1"],
       correct: 0,
       explanation: "1 + max(0, 0) correctly gives depth 1 for a single leaf node, which only works if null returns 0.",
     },
     {
       question: "What's the space complexity of a DFS recursion on a tree of height h?",
-      options: [
-        "O(h) for the call stack",
-        "O(n) always, regardless of height",
-        "O(1)",
-        "O(log n) always, regardless of shape",
-      ],
+      options: ["O(h) for the call stack", "O(n) always, regardless of height", "O(1)", "O(log n) always, regardless of shape"],
       correct: 0,
       explanation: "The recursion stack depth equals the height of the tree, which is O(log n) for balanced trees but can be O(n) for a skewed one.",
     },
   ],
 };
 </script>
-<script src="../../js/pattern-page.js"></script>
+<script src="../../js/topic-page.js"></script>
 </body>
 </html>

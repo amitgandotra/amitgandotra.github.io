@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Legacy Systems: SOAP, XML &amp; Databases — Becoming FDE</title>
+<link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="../../index.html"><span class="bracket">&gt;_</span> Becoming FDE</a>
+    <nav class="site-nav">
+      <a href="../python/index.html">Python</a>
+      <a href="../dsa/index.html">DSA</a>
+      <a href="../patterns/index.html">Patterns</a>
+      <a href="../integration/index.html" class="active">Integration</a>
+      <a href="../../index.html">All Topics</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="content">
+    <div id="content"></div>
+    <section class="quiz-section">
+      <div class="quiz-header"><h2>Quiz</h2></div>
+      <div id="quiz-container"></div>
+    </section>
+    <nav class="pattern-pagination" id="pagination"></nav>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">Becoming FDE — build in public, ship in prod.</div>
+</footer>
+
+<script src="../../js/data/site.js"></script>
+<script src="../../js/progress.js"></script>
+<script src="../../js/site-shell.js"></script>
+<script src="../../js/highlight.js"></script>
+<script src="../../js/quiz.js"></script>
+<script>
+const PAGE_DATA = {
+  summary: "Customers run on systems built long before REST: SOAP web services, XML feeds, fixed-width mainframe exports, and databases with cryptic column names. You rarely get to replace them. Your job is to talk to them safely and translate what they say.",
+  keyHeading: "What to expect and how to cope",
+  keyPoints: [
+    "<strong>SOAP</strong>: XML envelopes over HTTP, described by a WSDL. Libraries like <code>zeep</code> generate clients from the WSDL; underneath it's just XML you can build and parse with <code>xml.etree</code>.",
+    "<strong>XML namespaces</strong> trip everyone up: element names are qualified as <code>{namespace-uri}tag</code> in ElementTree.",
+    "<strong>Fixed-width files</strong> (mainframe/COBOL exports): fields defined by column positions from a spec, not by delimiters.",
+    "<strong>Direct database access</strong>: prefer a read-only account against a replica or a view. Use parameterized queries. Never write into their tables unless agreed.",
+    "<strong>Character encodings</strong>: cp1252, latin-1, EBCDIC. Decode explicitly with the encoding from the spec.",
+    "Wrap all of it in an adapter so the weirdness stays at the edge (see Data Mapping).",
+  ],
+  template: {
+    heading: "Building and parsing a SOAP message",
+    label: "python",
+    note: "SOAP is XML: construct an envelope, send it as the HTTP body, parse the XML reply.",
+    code: `import xml.etree.ElementTree as ET
+
+SOAP_NS = "http://schemas.xmlsoap.org/soap/envelope/"
+ET.register_namespace("soap", SOAP_NS)
+
+def build_request(customer_id):
+    envelope = ET.Element(f"{{{SOAP_NS}}}Envelope")
+    body = ET.SubElement(envelope, f"{{{SOAP_NS}}}Body")
+    req = ET.SubElement(body, "GetCustomer")
+    ET.SubElement(req, "Id").text = str(customer_id)
+    return ET.tostring(envelope, encoding="unicode")
+
+print(build_request(42))`,
+  },
+  examples: [
+    {
+      title: "Parsing a namespaced SOAP response",
+      prompt: "Find fields inside an envelope. Note the namespace mapping passed to <code>find</code>.",
+      code: `import xml.etree.ElementTree as ET
+
+xml_text = """<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <GetCustomerResponse>
+      <Name>Ada Lovelace</Name>
+      <Status>ACTIVE</Status>
+    </GetCustomerResponse>
+  </soap:Body>
+</soap:Envelope>"""
+
+ns = {"soap": "http://schemas.xmlsoap.org/soap/envelope/"}
+root = ET.fromstring(xml_text)
+resp = root.find("soap:Body/GetCustomerResponse", ns)
+print(resp.findtext("Name"), resp.findtext("Status"))`,
+      explanation: "Without the <code>ns</code> mapping, <code>find('soap:Body')</code> raises or returns None. Also handle SOAP <code>Fault</code> elements: a 200 or 500 response can still contain an error payload that you must detect.",
+      output: "Ada Lovelace ACTIVE",
+    },
+    {
+      title: "Fixed-width records and a safe database read",
+      prompt: "Parse a mainframe-style record by column positions, then look it up with a parameterized query.",
+      code: `import sqlite3
+
+# spec: cols 0-9 account id, 10-29 name, 30-37 balance in cents (zero padded)
+line = "0000012345Ada Lovelace        00019950"
+
+record = {
+    "account": line[0:10].lstrip("0"),
+    "name": line[10:30].strip(),
+    "balance": int(line[30:38]) / 100,
+}
+print(record)
+
+conn = sqlite3.connect(":memory:")
+conn.execute("CREATE TABLE acct (id TEXT, status TEXT)")
+conn.execute("INSERT INTO acct VALUES ('12345', 'OPEN')")
+row = conn.execute("SELECT status FROM acct WHERE id = ?", (record["account"],)).fetchone()
+print(row[0])`,
+      explanation: "Slicing by position is the whole parser; validate the line length first in real code. The query passes the ID as a bound parameter (<code>?</code>), never interpolated into the SQL string, which prevents SQL injection and quoting bugs.",
+      output: "{'account': '12345', 'name': 'Ada Lovelace', 'balance': 199.5} / OPEN",
+    },
+  ],
+  gotchas: [
+    "Forgetting XML namespaces so lookups silently return None.",
+    "Treating an HTTP 200 SOAP reply as success without checking for a Fault element.",
+    "String-formatting SQL for legacy databases. Use bound parameters, always.",
+    "Assuming UTF-8. Decode using the encoding in the spec, and test with accented names.",
+    "Parsing untrusted XML with default settings. Prefer <code>defusedxml</code> to avoid entity-expansion attacks.",
+  ],
+  gotchasHeading: "Common pitfalls",
+  practiceExercises: [
+    "Extend the SOAP parser to detect a <code>soap:Fault</code> and raise an exception with its message.",
+    "Validate that each fixed-width line is exactly 38 characters before slicing.",
+    "Decode a byte string in cp1252 containing an accented name and compare with UTF-8 decoding.",
+  ],
+  quiz: [
+    {
+      question: "What is SOAP at its core?",
+      options: [
+        "XML messages, usually over HTTP, defined by a WSDL",
+        "A binary streaming protocol",
+        "A JSON dialect",
+        "A database driver",
+      ],
+      correct: 0,
+      explanation: "SOAP messages are XML envelopes; tooling generates clients from the WSDL.",
+    },
+    {
+      question: "Why do ElementTree lookups on SOAP fail without a namespace map?",
+      options: [
+        "Element names are namespace-qualified, so prefixes must be resolved",
+        "ElementTree doesn't support XML",
+        "SOAP has no tags",
+        "Namespaces are optional in XML paths",
+      ],
+      correct: 0,
+      explanation: "Qualified names include the namespace URI; you provide a prefix mapping.",
+    },
+    {
+      question: "How should IDs be passed into a SQL query on a legacy database?",
+      options: [
+        "As bound parameters (?)",
+        "Concatenated into the SQL string",
+        "Through URL encoding",
+        "Via eval",
+      ],
+      correct: 0,
+      explanation: "Parameters prevent injection and quoting errors.",
+    },
+    {
+      question: "What defines fields in a fixed-width file?",
+      options: ["Column positions from a spec", "Commas", "Tabs", "JSON keys"],
+      correct: 0,
+      explanation: "Each field occupies a defined range of character positions.",
+    },
+    {
+      question: "A SOAP response has HTTP 200. Is it necessarily a success?",
+      options: [
+        "No, the body may contain a Fault element",
+        "Yes, always",
+        "Only on Tuesdays",
+        "Yes if it's XML",
+      ],
+      correct: 0,
+      explanation: "Application-level errors can be reported inside the payload.",
+    },
+  ],
+  id: "legacy-systems",
+};
+</script>
+<script src="../../js/topic-page.js"></script>
+</body>
+</html>
