@@ -300,6 +300,10 @@ patterns also a tips entry with a tested example.
 
 **Accessibility and mobile.** Buttons and links are real elements; menu/search close on Esc; the sidebar collapses behind
 a toggle at 820px or narrower; header labels shrink to icons at 640px or narrower. Preserve these when editing CSS.
+The end of `style.css` holds a "Mobile hardening" block: inline `code` wraps (`overflow-wrap: anywhere`), so long API names
+never force sideways page scroll (`pre` blocks scroll on their own), and every tappable element is at least 40px tall on
+phones and touch devices. Any new link, button or chip class should be added to that block, and inputs must stay at 16px
+to avoid iOS zoom-on-focus. Re-run `tools/checks/mobile.js` after CSS or layout changes.
 
 **Design tokens.** `css/style.css` starts with CSS variables (`--bg`, `--bg-raised`, `--bg-inset`, `--border`, `--text`,
 `--text-dim`, `--text-faint`, `--accent` teal, tier colours `--beginner` green, `--intermediate` amber, `--advanced` red,
@@ -350,9 +354,10 @@ Requirements: Node 18+ (developed on Node 25), **Python 3.10+** (developed on 3.
 | `node tools/checks/tips_asserts.js` | DSA tips structure, runs every tips example and Python tip, verifies the pattern finder |
 | `node tools/checks/checkcode.js` | Syntax-compiles every Python example in lesson pages and runs the self-contained ones (5 fragments in the Python topic are expected to fail to run) |
 | `node tools/build-search-index.js` | Regenerates the search index |
+| `node tools/checks/mobile.js [375,320]` | Real-Chrome mobile audit of every page (needs `puppeteer-core`, Chrome, and the repo served with `python3 -m http.server 8981`); reports sideways scroll, elements sticking out, and tap targets under 36px |
 
 Expected result today: all four checks pass. **Important limits:** jsdom does not lay out or paint anything, so visual
-layout, mobile appearance and animations have **never been checked in a real browser**. Treat visual changes as unverified.
+layout and animations are not covered by them. Mobile layout **was** checked in real Chrome on 2026-09-21 (375px and 320px, all 69 pages, plus screenshots of home, a lesson, the playbook, the menu drawer and search): no horizontal scroll and tap targets at least 40px, with one inline link in the complexity table at 31px wide. Desktop width, Safari and real devices are still unchecked, so treat those visual changes as unverified.
 
 ---
 

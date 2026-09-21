@@ -2,5 +2,5 @@
   "name": "fde-site-checks",
   "private": true,
   "description": "Test scripts for the Becoming FDE static site",
-  "devDependencies": { "jsdom": "^26.0.0" }
+  "devDependencies": { "jsdom": "^26.0.0", "puppeteer-core": "^24.0.0" }
 }
